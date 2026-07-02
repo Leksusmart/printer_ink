@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/backend/" />
+  <Folder Name="/backend/src/">
+    <File Path="backend/src/app.controller.spec.ts" />
+    <File Path="backend/src/app.controller.ts" />
+    <File Path="backend/src/app.module.ts" />
+    <File Path="backend/src/app.service.ts" />
+    <File Path="backend/src/main.ts" />
+  </Folder>
+  <Folder Name="/frontend/" />
+  <Folder Name="/frontend/app/">
+    <File Path="frontend/app/globals.css" />
+    <File Path="frontend/app/layout.tsx" />
+    <File Path="frontend/app/page.tsx" />
+  </Folder>
+</Solution>
