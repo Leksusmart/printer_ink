@@ -13,5 +13,7 @@ npm run init-all
 ```bash
 npm start
 ```
+
+
 * Бэкенд (NestJS) запустится на: `http://localhost:3000`
 * Фронтенд (Next.js) запустится на: `http://localhost:3001`
