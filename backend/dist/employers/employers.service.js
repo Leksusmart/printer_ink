@@ -9,18 +9,37 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppService = void 0;
+exports.EmployersService = void 0;
 const common_1 = require("@nestjs/common");
-const database_service_1 = require("./database/database.service");
-let AppService = class AppService {
+const database_service_1 = require("../database/database.service");
+let EmployersService = class EmployersService {
     databaseService;
     constructor(databaseService) {
         this.databaseService = databaseService;
     }
+    async findAll() {
+        const result = await this.databaseService.query(`
+			SELECT *
+			FROM Employers
+			ORDER BY phone
+			`);
+        return result.rows;
+    }
+    async findByPhone(phone) {
+        const result = await this.databaseService.query(`
+			SELECT *
+			FROM employers 
+			WHERE phone = $1
+			`, [phone]);
+        if (result.rows.length === 0) {
+            return null;
+        }
+        return result.rows[0];
+    }
 };
-exports.AppService = AppService;
-exports.AppService = AppService = __decorate([
+exports.EmployersService = EmployersService;
+exports.EmployersService = EmployersService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [database_service_1.DatabaseService])
-], AppService);
-//# sourceMappingURL=app.service.js.map
+], EmployersService);
+//# sourceMappingURL=employers.service.js.map

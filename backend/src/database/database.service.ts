@@ -1,3 +1,5 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // Сервис для работы с PostgreSQL (подключение к БД и выполнение запросов)
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
@@ -8,7 +10,6 @@ import { Pool } from 'pg';
 export class DatabaseService implements OnModuleDestroy {
     private pool: Pool;
 
-    // Внедряем ConfigService через конструктор. Он гарантирует, что .env уже прочитан!
     constructor(private readonly configService: ConfigService) {
         this.pool = new Pool({
             host: this.configService.get<string>('DB_HOST'),
@@ -23,7 +24,7 @@ export class DatabaseService implements OnModuleDestroy {
         return this.pool.query(sql, params);
     }
 
-    // Хорошая практика: закрываем пул подключений при остановке сервера
+    // закрываем пул подключений при остановке сервера
     async onModuleDestroy() {
         await this.pool.end();
     }
