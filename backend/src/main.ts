@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /**
  * НАЗНАЧЕНИЕ ФАЙЛА:
  * Это главная точка входа (entry point) в приложение NestJS.
@@ -5,19 +6,30 @@
  * Он создает экземпляр приложения на основе корневого модуля и запускает прослушивание портов.
  */
 
-// Импортируем NestFactory — главный инструмент для создания экземпляров приложения NestJS
 import { NestFactory } from '@nestjs/core';
-// Импортируем AppModule — главный (корневой) модуль, который объединяет весь код приложения
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config'; // Импортируем встроенную службу конфигурации
 
 // Основная функция для инициализации и запуска сервера
 async function bootstrap() {
-  // Создаем экземпляр приложения NestJS, передавая туда корневой модуль
-  const app = await NestFactory.create(AppModule);
+	// 1. Создаем экземпляр приложения NestJS
+	const app = await NestFactory.create(AppModule);
 
-  // Запускаем сервер. Он начинает слушать порт из переменных окружения (process.env.PORT).
-  // Если переменная не задана, по умолчанию используется порт 3000.
-  await app.listen(process.env.PORT ?? 3000);
+	// 2. Получаем ConfigService из контекста приложения
+	const configService = app.get(ConfigService);
+
+	// 3. Читаем порт из переменных окружения и преобразуем в число
+	const port = Number(configService.get<number>('PORT')) || 3000;
+
+	// 3.5. Читаем хост из переменных окружения. Если пусто — используем '0.0.0.0'
+	const host = configService.get<string>('HOST') || '0.0.0.0';
+
+	// 4. Запускаем сервер на определенном порту и хосте
+	await app.listen(port, host);
+
+	// Корректно выводим адрес в консоль (если хост 0.0.0.0, пишем localhost (одно и тоже))
+	const displayHost = host === '0.0.0.0' ? 'localhost' : host;
+	console.log(`Application is running on: http://${displayHost}:${port}`);
 }
 
 // Вызываем функцию bootstrap для фактического старта приложения при запуске файла
