@@ -1,28 +1,23 @@
+/* eslint-disable prettier/prettier */
 /**
  * НАЗНАЧЕНИЕ ФАЙЛА:
  * Это Контроллер (Controller) приложения.
  * Он отвечает за обработку входящих HTTP-запросов от клиента (браузера, мобильного приложения)
- * и отправку ответов обратно. Контроллер не содержит сложную бизнес-логику, 
+ * и отправку ответов обратно. Контроллер не содержит сложную бизнес-логику,
  * он лишь принимает запрос и вызывает нужный метод из Сервиса.
  */
 
 // Импортируем декоратор Controller для создания контроллера и Get для обработки GET-запросов
-import { Controller, Get } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 // Импортируем сервис, методы которого мы будем вызывать внутри контроллера
 import { AppService } from './app.service';
 
 // Декоратор Controller делает этот класс контроллером. 
 // В скобках можно указать путь, например @Controller('users'), чтобы все маршруты начинались с /users
-@Controller()
+@Controller('employers') // Добавим префикс, чтобы разделить методы и писать /employers?phone=+79991112233
 export class AppController {
   // Конструктор внедряет (Inject) зависимость AppService в этот класс.
   // private readonly создает скрытое свойство класса, и NestJS автоматически передает туда экземпляр сервиса
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
-  // Декоратор Get указывает, что метод ниже будет обрабатывать HTTP GET-запросы на корневой URL (/)
-  @Get()
-  getHello(): string {
-    // Вызываем метод getHello из нашего сервиса и возвращаем результат клиенту
-    return this.appService.getHello();
-  }
 }

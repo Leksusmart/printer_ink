@@ -1,3 +1,5 @@
+import { DatabaseService } from './database/database.service';
 export declare class AppService {
-    getHello(): string;
+    private readonly databaseService;
+    constructor(databaseService: DatabaseService);
 }

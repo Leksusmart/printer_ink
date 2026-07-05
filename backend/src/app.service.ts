@@ -1,18 +1,19 @@
-/**
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/*
  * НАЗНАЧЕНИЕ ФАЙЛА:
  * Это файл Сервиса (Service), также называемый Провайдером (Provider).
  * Он отвечает за бизнес-логику приложения: обработку данных, работу с базами данных и вычисления.
  * Контроллеры вызывают методы этого сервиса, чтобы не выполнять сложную работу самостоятельно.
  */
 
-// Импортируем декоратор Injectable, который делает класс частью системы внедрения зависимостей (Dependency Injection)
 import { Injectable } from '@nestjs/common';
+import { DatabaseService } from './database/database.service';
 
 // Декоратор Injectable говорит NestJS, что этот класс можно автоматически внедрять в другие классы (например, в контроллеры)
 @Injectable()
 export class AppService {
-  // Простой метод, который возвращает строку. Здесь должна быть логика (например, запрос к БД)
-  getHello(): string {
-    return 'Hello World!';
-  }
+	// Внедряем сервис БД через конструктор
+	constructor(private readonly databaseService: DatabaseService) { }
+
 }
