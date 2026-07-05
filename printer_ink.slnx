@@ -7,9 +7,19 @@
     <File Path="backend/src/app.service.ts" />
     <File Path="backend/src/main.ts" />
   </Folder>
+  <Folder Name="/backend/src/cartridges/">
+    <File Path="backend/src/cartridges/cartridges.controller.ts" />
+    <File Path="backend/src/cartridges/cartridges.module.ts" />
+    <File Path="backend/src/cartridges/cartridges.service.ts" />
+  </Folder>
   <Folder Name="/backend/src/database/">
     <File Path="backend/src/database/database.module.ts" />
     <File Path="backend/src/database/database.service.ts" />
+  </Folder>
+  <Folder Name="/backend/src/employers/">
+    <File Path="backend/src/employers/employers.controller.ts" />
+    <File Path="backend/src/employers/employers.module.ts" />
+    <File Path="backend/src/employers/employers.service.ts" />
   </Folder>
   <Folder Name="/frontend/" />
   <Folder Name="/frontend/app/">
