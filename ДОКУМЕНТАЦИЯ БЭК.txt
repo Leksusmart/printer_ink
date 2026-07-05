@@ -1,0 +1,12 @@
+Методы для фронта
+
+Варианты записи
+/employers/search?phone=+79991112233
+/employers/search?phone=79991112233
+/employers/search?phone=89991112233
+
+будет получен ответ в виде json
+{"id":1,"phone":"+79991112233","fullname":"Иванов Иван Иванович","role":"Admin"}
+
+
+

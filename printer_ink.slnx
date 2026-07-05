@@ -7,6 +7,10 @@
     <File Path="backend/src/app.service.ts" />
     <File Path="backend/src/main.ts" />
   </Folder>
+  <Folder Name="/backend/src/database/">
+    <File Path="backend/src/database/database.module.ts" />
+    <File Path="backend/src/database/database.service.ts" />
+  </Folder>
   <Folder Name="/frontend/" />
   <Folder Name="/frontend/app/">
     <File Path="frontend/app/globals.css" />

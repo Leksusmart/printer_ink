@@ -8,15 +8,19 @@
 
 // Импортируем декоратор Module для конфигурации класса как модуля NestJS
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config'; // .env обработка
 // Импортируем контроллер, который будет отвечать за обработку HTTP-запросов
 import { AppController } from './app.controller';
 // Импортируем сервис, который содержит бизнес-логику для этого модуля
 import { AppService } from './app.service';
-
+import { DatabaseModule } from './database/database.module';
 // Декоратор Module настраивает структуру текущего модуля с помощью специальных массивов
 @Module({
   // imports: список других модулей, чьи возможности (сервисы) нужны внутри этого модуля
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }), // isGlobal делает настройки доступными везде
+    DatabaseModule,
+  ],
 
   // controllers: список контроллеров, которые создаются и запускаются внутри этого модуля
   controllers: [AppController],
@@ -25,4 +29,4 @@ import { AppService } from './app.service';
   providers: [AppService],
 })
 // Пустой класс, который становится модулем благодаря декоратору выше
-export class AppModule { }
+export class AppModule {}
