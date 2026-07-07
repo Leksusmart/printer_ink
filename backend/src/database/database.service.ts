@@ -12,13 +12,15 @@ export class DatabaseService implements OnModuleDestroy {
 
     constructor(private readonly configService: ConfigService) {
         this.pool = new Pool({
-            host: this.configService.get<string>('DB_HOST'),
-            port: Number(this.configService.get<number>('DB_PORT')),
-            database: this.configService.get<string>('DB_NAME'),
-            user: this.configService.get<string>('DB_USER'),
-            password: this.configService.get<string>('DB_PASSWORD'),
+            // Если процесс запущен в Docker, process.env.DB_HOST возьмется из docker-compose
+            host: process.env.DB_HOST || this.configService.get<string>('DB_HOST') || 'localhost',
+            port: Number(process.env.DB_PORT || this.configService.get<number>('DB_PORT') || 5432),
+            database: process.env.DB_NAME || this.configService.get<string>('DB_NAME'),
+            user: process.env.DB_USER || this.configService.get<string>('DB_USER'),
+            password: process.env.DB_PASSWORD || this.configService.get<string>('DB_PASSWORD'),
         });
     }
+
 
     async query(sql: string, params?: any[]) {
         return this.pool.query(sql, params);
