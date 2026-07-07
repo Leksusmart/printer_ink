@@ -116,6 +116,7 @@ ALTER SEQUENCE public.employers_id_seq OWNED BY public.employers.id;
 CREATE TABLE public.requests (
     id integer NOT NULL,
     type character varying(20) NOT NULL,
+	isDeflective bool,
     status character varying(20),
     data timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     employee integer,
@@ -259,12 +260,12 @@ COPY public.employers (id, phone, fullname, role) FROM stdin;
 -- Data for Name: requests; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.requests (id, type, status, data, employee, lastchangedata, lastchangeby, comment) FROM stdin;
-1	Выдача	Завершена	2026-07-05 10:07:57.24339	2	2026-07-05 10:07:57.24339	\N	Выдан картридж для бухгалтерии
-2	Прием	В обработке	2026-07-05 10:07:57.24339	3	2026-07-05 10:07:57.24339	\N	Сдали пустой картридж из кадров
-3	Ремонт	В обработке	2026-07-05 10:07:57.24339	1	2026-07-05 10:07:57.24339	\N	Сильный треск при печати
-4	Выдача	Новая	2026-07-05 10:07:57.24339	4	2026-07-05 10:07:57.24339	\N	Заявка на картридж в архив
-5	Прием	Завершена	2026-07-05 10:07:57.24339	5	2026-07-05 10:07:57.24339	\N	Плановая замена картриджа
+COPY public.requests (id, type, isDeflective, status, data, employee, lastchangedata, lastchangeby, comment) FROM stdin;
+1	Выдача	null Завершена	2026-07-05 10:07:57.24339	2	2026-07-05 10:07:57.24339	\N	Выдан картридж для бухгалтерии
+2	Прием	f В обработке	2026-07-05 10:07:57.24339	3	2026-07-05 10:07:57.24339	\N	Сдали пустой картридж из кадров
+3	Ремонт	t В обработке	2026-07-05 10:07:57.24339	1	2026-07-05 10:07:57.24339	\N	Сильный треск при печати
+4	Выдача	null Создана	2026-07-05 10:07:57.24339	4	2026-07-05 10:07:57.24339	\N	Заявка на картридж в архив
+5	Прием	f Завершена	2026-07-05 10:07:57.24339	5	2026-07-05 10:07:57.24339	\N	Плановая замена картриджа
 \.
 
 
