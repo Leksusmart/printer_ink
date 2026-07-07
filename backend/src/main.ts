@@ -15,6 +15,9 @@ async function bootstrap() {
 	// 1. Создаем экземпляр приложения NestJS
 	const app = await NestFactory.create(AppModule);
 
+	// Разрешаем фронтенду отправлять запросы на бэкенд
+	app.enableCors();
+
 	// 2. Получаем ConfigService из контекста приложения
 	const configService = app.get(ConfigService);
 

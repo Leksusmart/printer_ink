@@ -29,12 +29,17 @@ import { EmployersService } from './employers/employers.service';
 // Декоратор Module настраивает структуру текущего модуля с помощью специальных массивов
 @Module({
   // imports: список других модулей, чьи возможности (сервисы) нужны внутри этого модуля
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // isGlobal делает настройки доступными везде
-    DatabaseModule,
-    CartridgesModule,
-    EmployersModule,
-  ],
+    // Найдите массив imports и дополните настройку ConfigModule:
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: ['.env', 'backend/.env', './backend/.env'] // ДОБАВИЛИ ЭТУ СТРОКУ
+        }),
+        DatabaseModule,
+        CartridgesModule,
+        EmployersModule,
+    ],
+
 
   // controllers: список контроллеров, которые создаются и запускаются внутри этого модуля
   controllers: [
