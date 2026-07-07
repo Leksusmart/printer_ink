@@ -14,6 +14,12 @@ npm run init-all
 npm start
 ```
 
+Либо можно запустить проект в Docker, для этого нужно выполнить команды в корне проекта:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
 
 * Бэкенд (NestJS) запустится на: `http://localhost:3000`
 * Фронтенд (Next.js) запустится на: `http://localhost:3001`
