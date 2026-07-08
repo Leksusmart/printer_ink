@@ -3,13 +3,13 @@
 import { Controller, Get, Query, NotFoundException, BadRequestException } from '@nestjs/common';
 import { RequestsService } from '../requests/requests.service';
 
-@Controller('Requests')
+@Controller('requests')
 export class RequestsController {
-	constructor(private readonly RequestsService:RequestsService) {}
+	constructor(private readonly requestsService:RequestsService) {}
 
   @Get()
   async findAll() {
-	  return this.RequestsService.findAll();
+	  return this.requestsService.findAll();
   }
 
 	@Get('search')
@@ -18,7 +18,7 @@ export class RequestsController {
             throw new BadRequestException('Параметр guid обязателен, Бэк ожидает /requests/search?guid=...');
         }
 
-        const request = await this.RequestsService.findRequestByGuid(guid);
+        const request = await this.requestsService.findRequestByGuid(guid);
 
         if (!request) {
             throw new NotFoundException(`Заявка связанная с GUID "${guid}" не найдена`);

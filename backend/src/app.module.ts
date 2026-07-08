@@ -26,19 +26,24 @@ import { EmployersModule } from './employers/employers.module';
 import { EmployersController } from './employers/employers.controller';
 import { EmployersService } from './employers/employers.service';
 
+import { RequestsModule } from './requests/requests.module';
+import { RequestsController } from './requests/requests.controller';
+import { RequestsService } from './requests/requests.service';
+
 // Декоратор Module настраивает структуру текущего модуля с помощью специальных массивов
 @Module({
   // imports: список других модулей, чьи возможности (сервисы) нужны внутри этого модуля
-    // Найдите массив imports и дополните настройку ConfigModule:
-    imports: [
-        ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: ['.env', 'backend/.env', './backend/.env'] // ДОБАВИЛИ ЭТУ СТРОКУ
-        }),
-        DatabaseModule,
-        CartridgesModule,
-        EmployersModule,
-    ],
+  // Найдите массив imports и дополните настройку ConfigModule:
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', 'backend/.env', './backend/.env'] // ДОБАВИЛИ ЭТУ СТРОКУ
+    }),
+    DatabaseModule,
+    CartridgesModule,
+    EmployersModule,
+    RequestsModule,
+  ],
 
 
   // controllers: список контроллеров, которые создаются и запускаются внутри этого модуля
@@ -46,6 +51,7 @@ import { EmployersService } from './employers/employers.service';
     AppController,
     CartridgesController,
     EmployersController,
+    RequestsController,
   ],
   // providers: список сервисов, которые NestJS создаст и сможет автоматически внедрять (DI)
   providers: [
@@ -53,6 +59,7 @@ import { EmployersService } from './employers/employers.service';
     DatabaseService,
     CartridgesService,
     EmployersService,
+    RequestsService,
   ],
 })
 // Пустой класс, который становится модулем благодаря декоратору выше

@@ -7,8 +7,8 @@ export interface Request {
 	type: string;
 	isDeflective: boolean;
 	status: string;
-	data: string;
-	emplotee: number;
+	data: Date;
+	employee: number;
 	lastchangedata: Date;
 	lastchangeby: number;
 	comment: string;
@@ -35,10 +35,11 @@ export class RequestsService {
 	) { }
 
 	async findAll(): Promise<Request[]> {
+		console.log("attt");
 		const result = await this.databaseService.query(
 			`
 			SELECT *
-			FROM Requests
+			FROM requests
 			ORDER BY data
 			`,
 		);
@@ -52,7 +53,6 @@ export class RequestsService {
 		const cartridge = await this.cartridgesService.findByGuid(guid);
 
 		if (!cartridge) {
-			console.log("NotFound");
 			return null;
 		}
 

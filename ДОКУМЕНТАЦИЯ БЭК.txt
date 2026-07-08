@@ -74,6 +74,50 @@
   "lastchangeby": null
 }
 
+заявка
+все заявки
+/requests
+ответ с сортировкой по дате:
+[
+  {
+    "id": 1,
+    "type": "Выдача",
+    "isdeflective": null,
+    "status": "Завершена",
+    "data": "2026-07-05T07:07:57.243Z",
+    "employee": 2,
+    "lastchangedata": "2026-07-05T07:07:57.243Z",
+    "lastchangeby": null,
+    "comment": "Выдан картридж для бухгалтерии"
+  },
+  {
+    "id": 2,
+    "type": "Прием",
+    "isdeflective": false,
+    "status": "В обработке",
+    "data": "2026-07-05T07:07:57.243Z",
+    "employee": 3,
+    "lastchangedata": "2026-07-05T07:07:57.243Z",
+    "lastchangeby": null,
+    "comment": "Сдали пустой картридж из кадров"
+  }
+]
+
+поиск заявки по guid связанного картриджа
+/requests/search?guid=550e8400-e29b-41d4-a716-446655440003
+
+ответ:
+{
+  "id": 4,
+  "type": "Выдача",
+  "isdeflective": null,
+  "status": "Создана",
+  "data": "2026-07-05T07:07:57.243Z",
+  "employee": 4,
+  "lastchangedata": "2026-07-05T07:07:57.243Z",
+  "lastchangeby": null,
+  "comment": "Заявка на картридж в архив"
+}
 
 ----------------------------------ОТПРАВКА ДАННЫХ В БЭК----------------------------------
 
