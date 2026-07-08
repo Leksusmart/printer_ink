@@ -35,7 +35,6 @@ export class RequestsService {
 	) { }
 
 	async findAll(): Promise<Request[]> {
-		console.log("attt");
 		const result = await this.databaseService.query(
 			`
 			SELECT *
