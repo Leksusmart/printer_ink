@@ -21,6 +21,11 @@
     <File Path="backend/src/employers/employers.module.ts" />
     <File Path="backend/src/employers/employers.service.ts" />
   </Folder>
+  <Folder Name="/backend/src/requests/">
+    <File Path="backend/src/requests/requests.controller.ts" />
+    <File Path="backend/src/requests/requests.module.ts" />
+    <File Path="backend/src/requests/requests.service.ts" />
+  </Folder>
   <Folder Name="/frontend/" />
   <Folder Name="/frontend/app/">
     <File Path="frontend/app/globals.css" />

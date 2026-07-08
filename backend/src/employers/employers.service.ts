@@ -1,5 +1,12 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+// Структура
+export interface Employeer {
+	id: number;
+	phone: string;
+	fullname: string;
+	role: string;
+}
 
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
@@ -8,7 +15,7 @@ import { DatabaseService } from '../database/database.service';
 export class EmployersService {
 	constructor(private readonly databaseService: DatabaseService) {}
 
-	async findAll(): Promise<{ id: number; phone: string; fullname: string; role: string }[]> {
+	async findAll(): Promise<Employeer[]> {
 		const result = await this.databaseService.query(
 			`
 			SELECT *
@@ -21,12 +28,12 @@ export class EmployersService {
 		return result.rows;
 	}
 
-	async findByPhone(phone: string): Promise<{ id: number; phone: string; fullname: string; role: string } | null> {
+	async findByPhone(phone: string): Promise<Employeer | null> {
 		// функция достаёт из базы информацию о сотруднике по номеру телефона
 		const result = await this.databaseService.query(
 			`
 			SELECT *
-			FROM employers 
+			FROM Employers 
 			WHERE phone = $1
 			`,
 			[phone],
