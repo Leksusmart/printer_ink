@@ -44,11 +44,11 @@ export default function LoginPage() {
             alert(`Добро пожаловать, ${user.fullname}!`);
 
             // 7. Перенаправляем пользователя на страницу /dashboard
-            router.push('/dashboard');
+            router.push(`/dashboard?phone=${encodeURIComponent(phone)}`);
 
-        } catch (err: any) {
-            // Если сработал throw new Error или бэкенд вообще выключен
-            setError(err.message || 'Произошла ошибка при подключении к серверу');
+        } catch (err) {
+            const error = err as Error;
+            setError(error.message || 'Произошла неизвестная ошибка');
         } finally {
             setIsLoading(false); // Выключаем режим загрузки в любом случае
         }

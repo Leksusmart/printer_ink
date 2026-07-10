@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Controller, Get, Query, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, NotFoundException, BadRequestException } from '@nestjs/common';
 import { RequestsService } from '../requests/requests.service';
 
 @Controller('requests')
@@ -10,7 +10,13 @@ export class RequestsController {
   @Get()
   async findAll() {
 	  return this.requestsService.findAll();
-  }
+    }
+    @Post()
+    async createRequest(@Body() requestData: any) {
+        // Этот метод просто ловит данные от фронтенда и отправляет их в сервис
+        return this.requestsService.create(requestData);
+    }
+
 
 	@Get('search')
     async searchByGuid(@Query('guid') guid: string) {
