@@ -37,7 +37,7 @@ import { RequestsService } from './requests/requests.service';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', 'backend/.env', './backend/.env'] // ДОБАВИЛИ ЭТУ СТРОКУ
+      envFilePath: ['.env', 'backend/.env', './backend/.env']
     }),
     DatabaseModule,
     CartridgesModule,

@@ -5,20 +5,19 @@ import { RequestsService } from '../requests/requests.service';
 
 @Controller('requests')
 export class RequestsController {
-	constructor(private readonly requestsService:RequestsService) {}
+    constructor(private readonly requestsService: RequestsService) { }
 
-  @Get()
-  async findAll() {
-	  return this.requestsService.findAll();
+    @Get()
+    async findAll() {
+        return this.requestsService.findAll();
     }
-    @Post()
+
+    @Post() // Этот метод просто ловит данные от фронтенда и отправляет их в сервис
     async createRequest(@Body() requestData: any) {
-        // Этот метод просто ловит данные от фронтенда и отправляет их в сервис
-        return this.requestsService.create(requestData);
+        return this.requestsService.createRequest_AddCartridges_ReturnGuids(requestData);
     }
 
-
-	@Get('search')
+    @Get('search')
     async searchByGuid(@Query('guid') guid: string) {
         if (!guid) {
             throw new BadRequestException('Параметр guid обязателен, Бэк ожидает /requests/search?guid=...');
