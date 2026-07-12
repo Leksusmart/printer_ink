@@ -106,68 +106,86 @@ export default function DashboardPage() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // Если пользователь еще не загрузился из БД, не даем отправить форму
         if (!currentUser) {
             alert('Ошибка: Данные сотрудника еще не загрузились!');
             return;
         }
 
-        // 1. Получаем текущую дату и время в формате: ГГГГ-ММ-ДД ЧЧ:ММ:СС (как ждет PgAdmin)
+        // 1. Создаем пустой мешок, куда будем складывать ВСЕ сгенерированные GUID от бэкенда
+        let allGeneratedGuids: string[] = [];
+        let successfulCount = 0;
+
         const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-        // 2. Проверяем, есть ли хоть один бракованный картридж в списке.
-        // Если хотя бы у одного стоит "isDefective: true", то вся заявка помечается как с дефектом (True)
-        const hasDefective = cartridges.some(item => item.isDefective === true);
-
-        // 3. Собираем объект в строгом соответствии с полями твоей таблицы "requests"
-        const requestData = {
-            type: operationType === 'ПРИЕМКА' ? 'Приёмка' : 'Выдача',
-            isdeflective: hasDefective,          // True, если выбран тумблер "Нет" (есть брак)
-            status: 'Создана',                   // Начальный статус заявки
-            data: currentDateTime,               // Дата создания
-            employee: currentUser.id,            // ID реального человека из таблицы employers
-            lastchangedata: currentDateTime,     // Дата изменения
-            lastchangeby: currentUser.id,        // Кто изменил (тот же сотрудник)
-            comment: comment.trim(),             // Текст комментария
-
-            // Дополнительно передаем массив картриджей (модель и количество), 
-            // чтобы бэкенд мог записать их в связующую таблицу картриджей для этой заявки
-            cartridgesList: cartridges.map(item => ({
-                model: item.model,
-                count: parseInt(item.count) || 1
-            }))
-        };
-
-        console.log('Отправляем на бэкенд следующий пакет данных:', requestData);
-
         try {
-            // 4. Делаем POST-запрос к бэкенду
-            const response = await fetch('http://localhost:3000/requests', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json', // Говорим серверу, что прислали JSON-текст
-                },
-                body: JSON.stringify(requestData) // Превращаем наш объект в строку для передачи по сети
-            });
+            // 2. ЗАПУСКАЕМ ЦИКЛ! Проходимся по каждому картриджу, который пользователь добавил на экран
+            for (const item of cartridges) {
+                // Если пользователь не выбрал модель в одной из строчек, просто пропускаем её
+                if (!item.model.trim()) continue;
 
-            // 5. Если бэкенд вернул ошибку (например, код 400 или 500)
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Сервер отклонил запрос');
+                // Упаковываем данные для ТЕКУЩЕГО картриджа в цикле
+                const requestData = {
+                    type: operationType === 'ПРИЕМКА' ? 'Приёмка' : 'Выдача',
+                    isdeflective: item.isDefective, // Флаг брака конкретно для ЭТОЙ строки
+                    status: 'Создана',
+                    data: currentDateTime,
+                    employee: currentUser.id,
+                    lastchangedata: currentDateTime,
+                    lastchangeby: currentUser.id,
+                    comment: comment.trim(), // Комментарий один общий, вставляем его везде
+                    model: item.model,       // Модель текущего картриджа
+                    amount: parseInt(item.count) || 1 // Количество текущего картриджа
+                };
+
+                console.log(`Отправляем в базу картридж: ${item.model} (${item.count} шт.)`);
+
+                // 3. Делаем POST-запрос строго для одной текущей модели
+                const response = await fetch('http://localhost:3000/requests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Ошибка при создании заявки для модели ${item.model}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success && Array.isArray(result.GUIDs)) {
+                    // 4. Склеиваем GUID-ы текущего картриджа с общим мешком
+                    allGeneratedGuids = [...allGeneratedGuids, ...result.GUIDs];
+                    successfulCount++;
+                } else {
+                    throw new Error(`Бэкенд вернул ошибку для модели ${item.model}`);
+                }
             }
 
-            // Если всё прошло успешно
-            alert('Заявка успешно сохранена в базу данных PgAdmin!');
+            // 5. КОНЕЦ ЦИКЛА. Если мы успешно отправили все заполненные строки
+            if (successfulCount > 0) {
+                alert(
+                    `Все заявки успешно созданы в PgAdmin!\n` +
+                    `Всего обработано типов картриджей: ${successfulCount}\n\n` +
+                    `Сгенерированные QR-коды (GUID) для маркировки:\n` +
+                    `${allGeneratedGuids.join('\n')}`
+                );
 
-            // Очищаем форму для новой заявки
-            setCartridges([{ model: '', count: '', isDefective: false }]);
-            setComment('');
+                // Очищаем форму (оставляем только одну пустую строку)
+                setCartridges([{ model: '', count: '', isDefective: false }]);
+                setComment('');
+            }
 
         } catch (err) {
             const error = err as Error;
-            setError(error.message || 'Произошла неизвестная ошибка');
+            console.error('Критическая ошибка в цикле отправки:', error);
+            alert(`Процесс прерван из-за ошибки: ${error.message}`);
         }
     };
+
+
 
 
     if (isLoading) return <div className="flex min-h-screen items-center justify-center text-gray-500">Загрузка данных из БД...</div>;
