@@ -14,7 +14,7 @@ export class RequestsController {
 
     @Post() // Этот метод просто ловит данные от фронтенда и отправляет их в сервис
     async createRequest(@Body() requestData: any) {
-        return this.requestsService.createRequest_AddCartridges_ReturnGuids(requestData);
+        return this.requestsService.createRequest(requestData);
     }
 
     @Get('search')

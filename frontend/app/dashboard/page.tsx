@@ -13,7 +13,7 @@ interface CartridgeItem {
     model: string;
     status: string;       // актуально только для mode: 'guid' — статус, пришедший с бэкенда
     count: string;        // актуально только для mode: 'manual'
-    isdefective: boolean;
+    isDefective: boolean;
     isResolved: boolean;  // GUID найден и подтянут с бэкенда
     lookupError: string;
 }
@@ -27,7 +27,7 @@ interface Employer {
 }
 
 const emptyRowForType = (_type: 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ'): CartridgeItem => (
-    { mode: 'guid', guid: '', model: '', status: '', count: '', isdefective: false, isResolved: false, lookupError: '' }
+    { mode: 'guid', guid: '', model: '', status: '', count: '', isDefective: false, isResolved: false, lookupError: '' }
 );
 
 export default function DashboardPage() {
@@ -157,7 +157,7 @@ export default function DashboardPage() {
     };
 
     // Ищем картридж по GUID на бэкенде: подтягиваем его модель и текущий статус
-    // GET /cartridges/search?guid=... → { id, model, guid, status, isdefective, lastchangedata, lastchangeby }
+    // GET /cartridges/search?guid=... → { id, model, guid, status, isDefective, lastchangedata, lastchangeby }
     const lookupCartridgeByGuid = async (index: number) => {
         const guidValue = cartridges[index].guid.trim();
         if (!guidValue) return;
@@ -236,8 +236,8 @@ export default function DashboardPage() {
                 // Базовые поля, общие для обоих режимов
                 const baseData = {
                     type: operationType === 'ПРИЕМКА' ? 'Приёмка' : 'Получение',
-                    isdefective: false,
-                    status: 'создана',
+                    isDefective: false,
+                    status: 'Создана',
                     data: currentDateTime,
                     employeeID: currentUser.id,
                     lastChangeData: currentDateTime,
@@ -255,12 +255,19 @@ export default function DashboardPage() {
                 let requestData;
                 if (operationType === 'ПРИЕМКА') {
                     if (item.mode === 'manual') {
+                        const parsedAmount = parseInt(item.count, 10);
+
+                        // Если количество не введено или <= 0, выдаем предупреждение, а не отправляем 0
+                        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+                            alert(`Укажите корректное количество для модели ${item.model}`);
+                            return; // прерываем отправку, чтобы пользователь исправил форму
+                        }
                         // Новый картридж
                         requestData = {
                             ...baseData,
-                            isdefective: item.isdefective,
+                            isDefective: item.isDefective,
                             model: item.model,
-                            amount: parseInt(item.count) || 0,
+                            amount: parsedAmount,
                             guid: '',
                             guids: [],
                         };
@@ -268,22 +275,21 @@ export default function DashboardPage() {
                         // Приёмка существующего картриджа
                         requestData = {
                             ...baseData,
-                            isdefective: item.isdefective,
+                            isDefective: item.isDefective,
                             model: '',
                             amount: 0,
-                            guid: '',
-                            guids: [item.guid],
+                            guid: [item.guid],
+                            guids: [],
                         };
                     }
-                } else {
-                    // Получение картриджа
+                } else { // Получение
                     requestData = {
                         ...baseData,
-                        isdefective: false,
+                        isDefective: false,
                         model: '',
                         amount: 0,
-                        guid: item.guid,
-                        guids: [],
+                        guid: '',
+                        guids: [item.guid],
                     };
                 }
 
@@ -308,7 +314,7 @@ export default function DashboardPage() {
 
                 if (result.success === false) {
                     throw new Error(
-                        `Бэкенд не смог создать заявку${item.mode === 'manual' ? ` для модели ${item.model}` : ''} (cartridgesAmount: ${result.cartridgesAmount ?? 0})`
+                        `Бэкенд отклонил заявку${item.mode === 'manual' ? ` для модели ${item.model}` : ''} (cartridgesAmount: ${result.cartridgesAmount ?? 0})`
                     );
                 }
 
@@ -323,7 +329,7 @@ export default function DashboardPage() {
             if (successfulCount > 0) {
                 alert(
                     `Все заявки успешно созданы в PgAdmin!\n` +
-                    `Всего обработано картриджей: ${successfulCount}\n\n` +
+                    `Всего обработано заявок: ${successfulCount}\n\n` +
                     `GUID-ы/QR-коды для маркировки:\n` +
                     `${allGeneratedGuids.join('\n')}`
                 );
@@ -478,15 +484,15 @@ export default function DashboardPage() {
                                         <div className="flex gap-2">
                                             <button
                                                 type="button"
-                                                onClick={() => updateCartridge(index, 'isdefective', false)}
-                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${!item.isdefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
+                                                onClick={() => updateCartridge(index, 'isDefective', false)}
+                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${!item.isDefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
                                             >
                                                 ДА
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => updateCartridge(index, 'isdefective', true)}
-                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${item.isdefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
+                                                onClick={() => updateCartridge(index, 'isDefective', true)}
+                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${item.isDefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
                                             >
                                                 НЕТ
                                             </button>

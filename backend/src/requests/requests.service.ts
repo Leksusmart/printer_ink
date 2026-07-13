@@ -8,9 +8,9 @@ export interface Request {
     isDeflective: boolean;
     status: string;
     data: Date;
-    employee: number;
-    lastchangedata: Date;
-    lastchangeby: number;
+    employeeID: number;
+    lastChangeData: Date;
+    lastChangeBy: number;
     comment: string;
 }
 export interface Cartridge {
@@ -18,19 +18,19 @@ export interface Cartridge {
     model: string;
     guid: string;
     status: string;
-    isdefective: boolean;
-    lastchangedata: Date;
-    lastchangeby: number;
+    isDefective: boolean;
+    lastChangeData: Date;
+    lastChangeBy: number;
 }
 
 export interface ImputRequestData {
     type: string;
-    isdefective: boolean;
+    isDefective: boolean;
     status: string;
     data: string;
-    employee: number;
-    lastchangedata: string;
-    lastchangeby: number;
+    employeeID: number;
+    lastChangeData: string;
+    lastChangeBy: number;
     comment: string;
     model: string;
     amount: number;
@@ -54,7 +54,6 @@ export class RequestsService {
             `
 			SELECT *
 			FROM requests
-			ORDER BY data
 			`,
         );
 
@@ -143,24 +142,51 @@ export class RequestsService {
         return { guid: generatedGUID };
     }
 
-    async createRequest_AddCartridges_ReturnGuids(data: ImputRequestData): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
+    async createRequest(data: ImputRequestData): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
+            console.log('guid:',data.guid, 'model:',data.model, 'amount:',data.amount);
             if (data.guid !== "") {
                 // Если картридж уже существует
                 // Меняем его статус на пустой или сломанный
-                const result = await this.cartridgesService.changeStatusesTo([data.guid], data.isdefective ? "Ожидает ремонта" : "Ожидает заправки");
-                if (result.success === true)
+                const status = data.isDefective ? "Ожидает ремонта" : "Ожидает заправки";
+                const result = await this.cartridgesService.changeStatusesTo([data.guid], status);
+
+                if (result.success === true) {
+                    // Создаем саму заявку и связываем с картриджем в БД
+                    const queryText = `
+                        WITH inserted_request AS (
+                            INSERT INTO requests (type, isDefective, status, data, employee, lastChangeData, lastChangeBy, comment)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                            RETURNING id
+                        )
+                        INSERT INTO requestslist (requestid, cartridgeid)
+                        SELECT ir.id, c.id
+                        FROM inserted_request ir
+                        CROSS JOIN cartridges c
+                        WHERE c.guid = $9; -- Привязываем к нашему существующему картриджу
+                    `;
+
+                    const queryParams = [
+                        data.type,            // $1
+                        data.isDefective,     // $2
+                        data.status,          // $3
+                        data.data,            // $4
+                        data.employeeID,      // $5
+                        data.lastChangeData,  // $6
+                        data.lastChangeBy,    // $7
+                        data.comment,         // $8
+                        data.guid             // $9
+                    ];
+
+                    await this.databaseService.query(queryText, queryParams);
+
                     return {
                         success: true,
                         cartridgesAmount: 0,
                         GUIDs: []
                     };
-                else {
-                    return {
-                        success: false,
-                        cartridgesAmount: 0,
-                        GUIDs: []
-                    };
+                } else {
+                    return { success: false, cartridgesAmount: 0, GUIDs: [] };
                 }
             } else if (data.model !== "" && data.amount !== 0) {
                 // Если картриджи новые для системы
@@ -176,14 +202,14 @@ export class RequestsService {
                 const queryText = `
 					WITH inserted_request AS (
 						-- 1. Создаем заявку и получаем ее ID
-						INSERT INTO requests (type, isdeflective, status, data, employee, lastchangedata, lastchangeby, comment)
+						INSERT INTO requests (type, isDefective, status, data, employee, lastChangeData, lastChangeBy, comment)
 						VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 						RETURNING id
 					),
 					inserted_cartridges AS (
 						-- 2. Разворачиваем массив GUID и пачкой вставляем картриджи
-						INSERT INTO cartridges (model, guid, status, isdefective, lastchangedata, lastchangeby)
-						SELECT $9, unnest($10::text[]), 'Поступил', $2, $6, $7
+						INSERT INTO cartridges (model, guid, status, isDefective, lastChangeData, lastChangeBy)
+						SELECT $9, unnest($10::text[]), $11, $2, $6, $7
 						RETURNING id, guid
 					),
 					inserted_list AS (
@@ -201,15 +227,16 @@ export class RequestsService {
 
                 const queryParams = [
                     data.type,            // $1
-                    data.isdefective,    // $2
+                    data.isDefective,    // $2
                     data.status,          // $3
                     data.data,            // $4
-                    data.employee,        // $5
-                    data.lastchangedata,  // $6
-                    data.lastchangeby,    // $7
+                    data.employeeID,        // $5
+                    data.lastChangeData,  // $6
+                    data.lastChangeBy,    // $7
                     data.comment,         // $8
                     data.model,           // $9
-                    guids                 // $10
+                    guids,                 // $10
+                    data.isDefective ? 'Ожидает ремонта' : 'Ожидает заправки'// $11
                 ];
 
                 const result = await this.databaseService.query(queryText, queryParams) as {

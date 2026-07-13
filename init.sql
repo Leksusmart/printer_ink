@@ -116,7 +116,7 @@ ALTER SEQUENCE public.employers_id_seq OWNED BY public.employers.id;
 CREATE TABLE public.requests (
     id integer NOT NULL,
     type character varying(20) NOT NULL,
-	isDeflective bool,
+	isDefective bool,
     status character varying(20),
     data timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     employee integer,
@@ -231,7 +231,7 @@ ALTER TABLE ONLY public.requestslist ALTER COLUMN id SET DEFAULT nextval('public
 --
 
 COPY public.cartridges (id, model, guid, status, isdefective, lastchangedata, lastchangeby) FROM stdin;
-1	HP LaserJet 12A	550e8400-e29b-41d4-a716-446655440000	Ожидает заправки	f	2026-07-05 10:07:57.24339	\N
+1	HP LaserJet 12A	550e8400-e29b-41d4-a716-446655440000	Требуется заправка	f	2026-07-05 10:07:57.24339	\N
 2	Canon 725	550e8400-e29b-41d4-a716-446655440001	Готов к выдаче	f	2026-07-05 10:07:57.24339	\N
 3	Samsung MLT-D101S	550e8400-e29b-41d4-a716-446655440002	Выдан	t	2026-07-05 10:07:57.24339	\N
 4	Brother TN-1075	550e8400-e29b-41d4-a716-446655440003	Ожидает ремонта	t	2026-07-05 10:07:57.24339	\N
@@ -260,12 +260,12 @@ COPY public.employers (id, phone, fullname, role) FROM stdin;
 -- Data for Name: requests; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.requests (id, type, isDeflective, status, data, employee, lastchangedata, lastchangeby, comment) FROM stdin;
+COPY public.requests (id, type, isDefective, status, data, employee, lastchangedata, lastchangeby, comment) FROM stdin;
 1	Выдача	\N	Завершена	2026-07-05 10:07:57.24339	2	2026-07-05 10:07:57.24339	\N	Выдан картридж для бухгалтерии
 2	Прием	false	В обработке	2026-07-05 10:07:57.24339	3	2026-07-05 10:07:57.24339	\N	Сдали пустой картридж из кадров
 3	Ремонт	true	В обработке	2026-07-05 10:07:57.24339	1	2026-07-05 10:07:57.24339	\N	Сильный треск при печати
 4	Выдача	\N	Создана	2026-07-05 10:07:57.24339	4	2026-07-05 10:07:57.24339	\N	Заявка на картридж в архив
-5	Выдача	false	Завершена	2026-07-05 10:07:57.24339	5	2026-07-05 10:07:57.24339	\N	Плановая замена картриджа
+5	Прием	false	Завершена	2026-07-05 10:07:57.24339	5	2026-07-05 10:07:57.24339	\N	Плановая замена картриджа
 \.
 
 

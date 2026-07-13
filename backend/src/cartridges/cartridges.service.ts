@@ -24,7 +24,7 @@ export class CartridgesService {
 			`
 	  SELECT *
 	  FROM cartridges
-	  ORDER BY Model
+	  ORDER BY lastChangeData
 	  `,
 		);
 
@@ -74,9 +74,7 @@ export class CartridgesService {
 		} catch (error) {
 			console.error("Ошибка при массовом изменении статуса картриджей:", error);
 
-			return {
-				success: false,
-			};
+			return { success: false };
 		}
 	}
 }
