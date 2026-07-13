@@ -143,8 +143,14 @@ export class RequestsService {
 
     async createRequest_AddCartridges_ReturnGuids(data: ImputRequestData): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
-            // Генерируем строковый массив GUID-ов под нужное количество картриджей
-            const guids = Array.from({ length: data.amount }, () => this.generateGUID());
+            // 1. Создаем массив промисов
+            const guidPromises = Array.from({ length: data.amount }, () => this.generateGUID());
+
+            // 2. Дожидаемся выполнения всех промисов
+            const generatedObjects = await Promise.all(guidPromises);
+
+            // 3. Вытаскиваем чистые строки UUID из объектов
+            const guids = generatedObjects.map(item => item.guid);
 
             const queryText = `
             WITH inserted_request AS (
