@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 // Импортируем useRouter (для кнопки "Выйти") и useSearchParams (чтобы прочитать телефон из адреса страницы)
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -30,7 +30,7 @@ const emptyRowForType = (_type: 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ'): Cartri
     { mode: 'guid', guid: '', model: '', status: '', count: '', isDefective: false, isResolved: false, lookupError: '' }
 );
 
-export default function DashboardPage() {
+function DashboardContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     // Читаем телефон из адреса сайта (например, ?phone=89008000010)
@@ -595,5 +595,13 @@ export default function DashboardPage() {
                 </form>
             </div>
         </div>
+    );
+}
+
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Загрузка панели...</div>}>
+            <DashboardContent />
+        </Suspense>
     );
 }
