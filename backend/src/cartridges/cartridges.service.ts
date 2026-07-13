@@ -48,26 +48,36 @@ export class CartridgesService {
 		return result.rows[0];
 	}
 
-	async changeStatusTo(guid: string, newStatus: string): Promise<{ success: boolean; }> {
+	async changeStatusesTo(guids: string[], newStatus: string): Promise<{ success: boolean; }> {
 		try {
+			// Если массив пустой
+			if (!guids || guids.length === 0) {
+				return { success: false };
+			}
+
 			const result = await this.databaseService.query(
 				`
 				UPDATE cartridges
 				SET status = $1
-				WHERE guid = $2;
+				WHERE guid = ANY($2);
 				`,
-				[newStatus, guid],
+				[newStatus, guids], // Драйвер pg сам преобразует массив в формат для базы данных
 			);
-			// Если result.rowCount равен null или undefined, подставится 0
+
 			const rowCount = result.rowCount ?? 0;
+
+			// Запрос успешен, если обновилось хотя бы столько же строк, сколько было передано GUID-ов.
 			const success = rowCount > 0;
 
 			return { success };
 
 		} catch (error) {
-			console.error("Ошибка при изменении статуса картриджа:", error);
+			console.error("Ошибка при массовом изменении статуса картриджей:", error);
 
-			return { success: false, };
+			return {
+				success: false,
+				updatedCount: 0
+			};
 		}
 	}
 }
