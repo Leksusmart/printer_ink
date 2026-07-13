@@ -76,7 +76,6 @@ export class CartridgesService {
 
 			return {
 				success: false,
-				updatedCount: 0
 			};
 		}
 	}

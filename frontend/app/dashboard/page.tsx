@@ -223,36 +223,6 @@ export default function DashboardPage() {
             return;
         }
 
-        if (operationType === 'ПОЛУЧЕНИЕ') {
-            const guids = cartridges
-                .filter(item => item.mode === 'guid' && item.isResolved)
-                .map(item => item.guid);
-            const requestData = {
-                type: 'Получение',
-                isdeflective: null,
-                status: 'создана',
-                data: currentDateTime,
-                employeeID: currentUser.id,
-                lastChangeData: currentDateTime,
-                lastChangeBy: currentUser.id,
-
-                comment: comment.trim(),
-
-                guids,
-            };
-            console.log('Отправляем получение:', requestData);
-            const response = await fetch('http://localhost:3000/requests', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestData),
-            });
-            const result = await response.json();
-            console.log(result);
-            return;
-        }
-
         let allGeneratedGuids: string[] = [];
         let successfulCount = 0;
 
@@ -269,8 +239,8 @@ export default function DashboardPage() {
                     status: 'создана',
                     data: currentDateTime,
                     employeeID: currentUser.id,
-                    lastChangeData: currentDateTime,
-                    lastChangeBy: currentUser.id,
+                    lastchangedata: currentDateTime,
+                    lastchangeby: currentUser.id,
                     comment: comment.trim(),
                 };
 
@@ -286,21 +256,26 @@ export default function DashboardPage() {
                             isdeflective: item.isdeflective,
                             model: item.model,
                             amount: parseInt(item.count) || 0,
+                            guid: null,
                         };
                     } else {
-                        // Старый картридж
+                        // Приёмка существующего картриджа
                         requestData = {
                             ...baseData,
                             isdeflective: item.isdeflective,
+                            model: null,
+                            amount: null,
                             guid: item.guid,
                         };
                     }
                 } else {
-                    // Получение
+                    // Получение картриджа
                     requestData = {
                         ...baseData,
                         isdeflective: null,
-                        guids: [item.guid],
+                        model: null,
+                        amount: null,
+                        guid: item.guid,
                     };
                 }
 
