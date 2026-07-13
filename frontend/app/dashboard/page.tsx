@@ -13,7 +13,7 @@ interface CartridgeItem {
     model: string;
     status: string;       // актуально только для mode: 'guid' — статус, пришедший с бэкенда
     count: string;        // актуально только для mode: 'manual'
-    isdeflective: boolean;
+    isdefective: boolean;
     isResolved: boolean;  // GUID найден и подтянут с бэкенда
     lookupError: string;
 }
@@ -27,7 +27,7 @@ interface Employer {
 }
 
 const emptyRowForType = (_type: 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ'): CartridgeItem => (
-    { mode: 'guid', guid: '', model: '', status: '', count: '', isdeflective: false, isResolved: false, lookupError: '' }
+    { mode: 'guid', guid: '', model: '', status: '', count: '', isdefective: false, isResolved: false, lookupError: '' }
 );
 
 export default function DashboardPage() {
@@ -157,7 +157,7 @@ export default function DashboardPage() {
     };
 
     // Ищем картридж по GUID на бэкенде: подтягиваем его модель и текущий статус
-    // GET /cartridges/search?guid=... → { id, model, guid, status, isdeflective, lastchangedata, lastchangeby }
+    // GET /cartridges/search?guid=... → { id, model, guid, status, isdefective, lastchangedata, lastchangeby }
     const lookupCartridgeByGuid = async (index: number) => {
         const guidValue = cartridges[index].guid.trim();
         if (!guidValue) return;
@@ -236,12 +236,17 @@ export default function DashboardPage() {
                 // Базовые поля, общие для обоих режимов
                 const baseData = {
                     type: operationType === 'ПРИЕМКА' ? 'Приёмка' : 'Получение',
+                    isdefective: false,
                     status: 'создана',
                     data: currentDateTime,
                     employeeID: currentUser.id,
-                    lastchangedata: currentDateTime,
-                    lastchangeby: currentUser.id,
+                    lastChangeData: currentDateTime,
+                    lastChangeBy: currentUser.id,
                     comment: comment.trim(),
+                    model: '',
+                    amount: 0,
+                    guid: '',
+                    guids: [],
                 };
 
                 // В режиме GUID — ссылаемся на уже существующий картридж по его GUID.
@@ -253,29 +258,32 @@ export default function DashboardPage() {
                         // Новый картридж
                         requestData = {
                             ...baseData,
-                            isdeflective: item.isdeflective,
+                            isdefective: item.isdefective,
                             model: item.model,
                             amount: parseInt(item.count) || 0,
-                            guid: null,
+                            guid: '',
+                            guids: [],
                         };
                     } else {
                         // Приёмка существующего картриджа
                         requestData = {
                             ...baseData,
-                            isdeflective: item.isdeflective,
-                            model: null,
-                            amount: null,
-                            guid: item.guid,
+                            isdefective: item.isdefective,
+                            model: '',
+                            amount: 0,
+                            guid: '',
+                            guids: [item.guid],
                         };
                     }
                 } else {
                     // Получение картриджа
                     requestData = {
                         ...baseData,
-                        isdeflective: null,
-                        model: null,
-                        amount: null,
+                        isdefective: false,
+                        model: '',
+                        amount: 0,
                         guid: item.guid,
+                        guids: [],
                     };
                 }
 
@@ -470,15 +478,15 @@ export default function DashboardPage() {
                                         <div className="flex gap-2">
                                             <button
                                                 type="button"
-                                                onClick={() => updateCartridge(index, 'isdeflective', false)}
-                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${!item.isdeflective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
+                                                onClick={() => updateCartridge(index, 'isdefective', false)}
+                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${!item.isdefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
                                             >
                                                 ДА
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => updateCartridge(index, 'isdeflective', true)}
-                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${item.isdeflective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
+                                                onClick={() => updateCartridge(index, 'isdefective', true)}
+                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${item.isdefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
                                             >
                                                 НЕТ
                                             </button>
