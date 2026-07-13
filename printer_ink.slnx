@@ -32,4 +32,7 @@
     <File Path="frontend/app/layout.tsx" />
     <File Path="frontend/app/page.tsx" />
   </Folder>
+  <Folder Name="/frontend/app/dashboard/">
+    <File Path="frontend/app/dashboard/page.tsx" />
+  </Folder>
 </Solution>
