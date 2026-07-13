@@ -29,7 +29,8 @@ npm start
 
 ```bash
 docker compose down -v
-docker compose up -d
+docker compose build
+docker compose up
 ```
 
 Автоматически будет создана БД с начальными параметрами и настроятся все зависимости, а также:
