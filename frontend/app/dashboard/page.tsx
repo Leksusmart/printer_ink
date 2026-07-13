@@ -414,6 +414,25 @@ export default function DashboardPage() {
                                                         {'   '}
                                                         Текущий статус: <span className="font-medium text-gray-700">{item.status}</span>
                                                     </p>
+                                                    <div className="space-y-1.5">
+                                                        <label className="block text-sm text-gray-700">Картридж исправен?</label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateCartridge(index, 'isDefective', false)}
+                                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${!item.isDefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
+                                                            >
+                                                                ДА
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateCartridge(index, 'isDefective', true)}
+                                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${item.isDefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
+                                                            >
+                                                                НЕТ
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                     {!item.isResolved && (
                                                         <button
                                                             type="button"
