@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Printer Ink</string>
+    <string name="title_activity_main">Printer Ink</string>
+    <string name="package_name">com.myproject.app</string>
+    <string name="custom_url_scheme">com.myproject.app</string>
+</resources>
