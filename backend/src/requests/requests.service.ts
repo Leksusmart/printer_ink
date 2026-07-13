@@ -25,7 +25,7 @@ export interface Cartridge {
 
 export interface ImputRequestData {
     type: string;
-    isdeflective: boolean;
+    isdefective: boolean;
     status: string;
     data: string;
     employee: number;
@@ -34,6 +34,7 @@ export interface ImputRequestData {
     comment: string;
     model: string;
     amount: number;
+    guid: string;
 }
 
 import { Injectable } from '@nestjs/common';
@@ -143,76 +144,101 @@ export class RequestsService {
 
     async createRequest_AddCartridges_ReturnGuids(data: ImputRequestData): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
-            // 1. Создаем массив промисов
-            const guidPromises = Array.from({ length: data.amount }, () => this.generateGUID());
+            if (data.model === null && data.amount === null && data.guid !== null) {
+                // Если картридж уже существует
+                // Меняем его статус на пустой или сломанный
+                const result = await this.cartridgesService.changeStatusTo(data.guid, data.isdefective ? "Ожидает ремонта" : "Ожидает заправки");
+                if (result.success === true)
+                    return {
+                        success: true,
+                        cartridgesAmount: 0,
+                        GUIDs: []
+                    };
+                else {
+                    return {
+                        success: false,
+                        cartridgesAmount: 0,
+                        GUIDs: []
+                    };
+                }
+            } else if (data.model !== null && data.amount !== null && data.guid === null) {
+                // Если картриджи новые для системы
+                // 1. Создаем массив промисов
+                const guidPromises = Array.from({ length: data.amount }, () => this.generateGUID());
 
-            // 2. Дожидаемся выполнения всех промисов
-            const generatedObjects = await Promise.all(guidPromises);
+                // 2. Дожидаемся выполнения всех промисов
+                const generatedObjects = await Promise.all(guidPromises);
 
-            // 3. Вытаскиваем чистые строки UUID из объектов
-            const guids = generatedObjects.map(item => item.guid);
+                // 3. Вытаскиваем чистые строки UUID из объектов
+                const guids = generatedObjects.map(item => item.guid);
 
-            const queryText = `
-            WITH inserted_request AS (
-                -- 1. Создаем заявку и получаем ее ID
-                INSERT INTO requests (type, isdeflective, status, data, employee, lastchangedata, lastchangeby, comment)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                RETURNING id
-            ),
-            inserted_cartridges AS (
-                -- 2. Разворачиваем массив GUID и пачкой вставляем картриджи
-                INSERT INTO cartridges (model, guid, status, isdefective, lastchangedata, lastchangeby)
-                SELECT $9, unnest($10::text[]), 'Поступил', $2, $6, $7
-                RETURNING id, guid
-            ),
-            inserted_list AS (
-                -- 3. Связываем созданную заявку со всеми созданными картриджами
-                INSERT INTO requestslist (requestid, cartridgeid)
-                SELECT inserted_request.id, inserted_cartridges.id
-                FROM inserted_request, inserted_cartridges
-                RETURNING cartridgeid
-            )
-            -- 4. ВОЗВРАЩАЕМ реальные GUID из базы данных
-            SELECT ic.guid 
-            FROM inserted_list il
-            JOIN inserted_cartridges ic ON il.cartridgeid = ic.id;
-        `;
+                const queryText = `
+                    WITH inserted_request AS (
+                        -- 1. Создаем заявку и получаем ее ID
+                        INSERT INTO requests (type, isdeflective, status, data, employee, lastchangedata, lastchangeby, comment)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        RETURNING id
+                    ),
+                    inserted_cartridges AS (
+                        -- 2. Разворачиваем массив GUID и пачкой вставляем картриджи
+                        INSERT INTO cartridges (model, guid, status, isdefective, lastchangedata, lastchangeby)
+                        SELECT $9, unnest($10::text[]), 'Поступил', $2, $6, $7
+                        RETURNING id, guid
+                    ),
+                    inserted_list AS (
+                        -- 3. Связываем созданную заявку со всеми созданными картриджами
+                        INSERT INTO requestslist (requestid, cartridgeid)
+                        SELECT inserted_request.id, inserted_cartridges.id
+                        FROM inserted_request, inserted_cartridges
+                        RETURNING cartridgeid
+                    )
+                    -- 4. ВОЗВРАЩАЕМ реальные GUID из базы данных
+                    SELECT ic.guid 
+                    FROM inserted_list il
+                    JOIN inserted_cartridges ic ON il.cartridgeid = ic.id;
+                    `;
 
-            const queryParams = [
-                data.type,            // $1
-                data.isdeflective,    // $2
-                data.status,          // $3
-                data.data,            // $4
-                data.employee,        // $5
-                data.lastchangedata,  // $6
-                data.lastchangeby,    // $7
-                data.comment,         // $8
-                data.model,           // $9
-                guids                 // $10
-            ];
+                const queryParams = [
+                    data.type,            // $1
+                    data.isdefective,    // $2
+                    data.status,          // $3
+                    data.data,            // $4
+                    data.employee,        // $5
+                    data.lastchangedata,  // $6
+                    data.lastchangeby,    // $7
+                    data.comment,         // $8
+                    data.model,           // $9
+                    guids                 // $10
+                ];
 
-            const result = await this.databaseService.query(queryText, queryParams) as {
-                rows: { guid: string }[]
-            };
+                const result = await this.databaseService.query(queryText, queryParams) as {
+                    rows: { guid: string }[]
+                };
 
-            // Проверяем, что база вернула строки
-            if (!result.rows || result.rows.length === 0) {
+                // Проверяем, что база вернула строки
+                if (!result.rows || result.rows.length === 0) {
+                    return {
+                        success: false,
+                        cartridgesAmount: 0,
+                        GUIDs: []
+                    };
+                }
+
+                // Вытаскиваем из строк базы чистый массив строк
+                const savedGuids = result.rows.map(row => row.guid);
+
+                return {
+                    success: true,
+                    cartridgesAmount: savedGuids.length,
+                    GUIDs: savedGuids
+                };
+            } else {
                 return {
                     success: false,
                     cartridgesAmount: 0,
                     GUIDs: []
                 };
             }
-
-            // Вытаскиваем из строк базы чистый массив строк
-            const savedGuids = result.rows.map(row => row.guid);
-
-            return {
-                success: true,
-                cartridgesAmount: savedGuids.length,
-                GUIDs: savedGuids
-            };
-
         } catch (error) {
             console.error("Ошибка при создании заявки и картриджей:", error);
 
