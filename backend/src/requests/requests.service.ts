@@ -145,7 +145,7 @@ export class RequestsService {
 
     async createRequest_AddCartridges_ReturnGuids(data: ImputRequestData): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
-            if (data.guid !== null) {
+            if (data.guid !== "") {
                 // Если картридж уже существует
                 // Меняем его статус на пустой или сломанный
                 const result = await this.cartridgesService.changeStatusesTo([data.guid], data.isdefective ? "Ожидает ремонта" : "Ожидает заправки");
@@ -162,7 +162,7 @@ export class RequestsService {
                         GUIDs: []
                     };
                 }
-            } else if (data.model !== null && data.amount !== null) {
+            } else if (data.model !== "" && data.amount !== 0) {
                 // Если картриджи новые для системы
                 // 1. Создаем массив промисов
                 const guidPromises = Array.from({ length: data.amount }, () => this.generateGUID());
@@ -233,7 +233,7 @@ export class RequestsService {
                     cartridgesAmount: savedGuids.length,
                     GUIDs: savedGuids
                 };
-            } else if (data.guids !== null) {
+            } else if (data.guids.length > 0) {
                 // Если приёмка
                 // Выполняем оптимизированный массовый запрос
                 const result = await this.cartridgesService.changeStatusesTo(data.guids, "Выдан");
