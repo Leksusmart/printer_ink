@@ -6,3 +6,4 @@
 /backend/obj/
 /backend/test/
 /frontend/android
+capacitor.config.ts
