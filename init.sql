@@ -77,9 +77,9 @@ CREATE TABLE public.employers (
     id integer NOT NULL,
     phone character varying(12) NOT NULL,
     fullname character varying(255) NOT NULL,
-    role character varying(15) DEFAULT 'User'::character varying
+    role character varying(15) DEFAULT 'User'::character varying,
+    password character varying(255) DEFAULT NULL
 );
-
 
 ALTER TABLE public.employers OWNER TO postgres;
 
@@ -224,6 +224,28 @@ ALTER TABLE ONLY public.requests ALTER COLUMN id SET DEFAULT nextval('public.req
 ALTER TABLE ONLY public.requestslist ALTER COLUMN id SET DEFAULT nextval('public.requestslist_id_seq'::regclass);
 
 
+CREATE TABLE public.dashboard_settings (
+    id integer PRIMARY KEY DEFAULT 1,
+    filled_red_from integer DEFAULT 10,
+    filled_red_to integer DEFAULT 999,
+    filled_yellow_from integer DEFAULT 6,
+    filled_yellow_to integer DEFAULT 9,
+    filled_green_from integer DEFAULT 0,
+    filled_green_to integer DEFAULT 5,
+    empty_red_from integer DEFAULT 10,
+    empty_red_to integer DEFAULT 999,
+    empty_yellow_from integer DEFAULT 6,
+    empty_yellow_to integer DEFAULT 9,
+    empty_green_from integer DEFAULT 0,
+    empty_green_to integer DEFAULT 5,
+    refill_threshold integer DEFAULT 10,
+    CONSTRAINT single_row CHECK (id = 1) -- Гарантирует, что строка в таблице будет всегда только одна
+);
+
+-- Вставляем дефолтную строчку со скриншота при создании базы
+INSERT INTO public.dashboard_settings (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+
 --
 -- TOC entry 5046 (class 0 OID 16486)
 -- Dependencies: 220
@@ -231,11 +253,11 @@ ALTER TABLE ONLY public.requestslist ALTER COLUMN id SET DEFAULT nextval('public
 --
 
 COPY public.cartridges (id, model, guid, status, isdefective, lastchangedata, lastchangeby) FROM stdin;
-1	HP LaserJet 12A	550e8400-e29b-41d4-a716-446655440000	Требуется заправка	f	2026-07-05 10:07:57.24339	\N
+1	HP LaserJet 12A	550e8400-e29b-41d4-a716-446655440000	Ожидает заправки	f	2026-07-05 10:07:57.24339	\N
 2	Canon 725	550e8400-e29b-41d4-a716-446655440001	Готов к выдаче	f	2026-07-05 10:07:57.24339	\N
 3	Samsung MLT-D101S	550e8400-e29b-41d4-a716-446655440002	Выдан	t	2026-07-05 10:07:57.24339	\N
 4	Brother TN-1075	550e8400-e29b-41d4-a716-446655440003	Ожидает ремонта	t	2026-07-05 10:07:57.24339	\N
-5	Xerox 3020	550e8400-e29b-41d4-a716-446655440004	Выдан	t	2026-07-05 10:07:57.24339	\N
+5	Xerox 3020	550e8400-e29b-41d4-a716-446655440004	Списан	t	2026-07-05 10:07:57.24339	\N
 \.
 
 
@@ -245,12 +267,12 @@ COPY public.cartridges (id, model, guid, status, isdefective, lastchangedata, la
 -- Data for Name: employers; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.employers (id, phone, fullname, role) FROM stdin;
-1	+79991112233	Иванов Иван Иванович	Admin
-2	+79992223344	Петров Петр Петрович	User
-3	+79993334455	Сидоров Сидор Сидорович	User
-4	+79994445566	Алексеев Алексей Алексеевич	User
-5	+79995556677	Николаев Николай Николаевич	User
+COPY public.employers (id, phone, fullname, role, password) FROM stdin;
+1	+79991112233	Иванов Иван Иванович	Admin	$2b$10$vn6tNBc5qvNrYMJtxCkEe.i0H6vv79gVmZO58U3Zo73gNh2pI3vFi
+2	+79992223344	Петров Петр Петрович	User	\N
+3	+79993334455	Сидоров Сидор Сидорович	User	\N
+4	+79994445566	Алексеев Алексей Алексеевич	User	\N
+5	+79995556677	Николаев Николай Николаевич	User	\N
 \.
 
 
@@ -261,11 +283,11 @@ COPY public.employers (id, phone, fullname, role) FROM stdin;
 --
 
 COPY public.requests (id, type, isDefective, status, data, employee, lastchangedata, lastchangeby, comment) FROM stdin;
-1	Выдача	\N	Завершена	2026-07-05 10:07:57.24339	2	2026-07-05 10:07:57.24339	\N	Выдан картридж для бухгалтерии
-2	Прием	false	В обработке	2026-07-05 10:07:57.24339	3	2026-07-05 10:07:57.24339	\N	Сдали пустой картридж из кадров
-3	Ремонт	true	В обработке	2026-07-05 10:07:57.24339	1	2026-07-05 10:07:57.24339	\N	Сильный треск при печати
-4	Выдача	\N	Создана	2026-07-05 10:07:57.24339	4	2026-07-05 10:07:57.24339	\N	Заявка на картридж в архив
-5	Прием	false	Завершена	2026-07-05 10:07:57.24339	5	2026-07-05 10:07:57.24339	\N	Плановая замена картриджа
+1	Получение	\N	Создана	2026-07-05 10:07:57.24339	2	2026-07-05 10:07:57.24339	2	Выдан картридж для бухгалтерии
+2	Приёмка	false	Создана	2026-07-05 10:07:57.24339	3	2026-07-05 10:07:57.24339	3	Сдали пустой картридж из кадров
+3	Приёмка	true	Завершена	2026-07-05 10:07:57.24339	1	2026-07-05 10:07:57.24339	1	Сильный треск при печати
+4	Получение	\N	Создана	2026-07-05 10:07:57.24339	4	2026-07-05 10:07:57.24339	4	Заявка на картридж в архив
+5	Приёмка	false	Завершена	2026-07-05 10:07:57.24339	5	2026-07-05 10:07:57.24339	5	Плановая замена картриджа
 \.
 
 

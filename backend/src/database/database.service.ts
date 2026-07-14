@@ -6,6 +6,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config'; // Импортируем встроенную службу конфигурации
 import { Pool } from 'pg';
 
+
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {
     private pool: Pool;

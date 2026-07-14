@@ -4,13 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-	  "start": "concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm run dev\"",
-	  "init-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-	  "init-APK": "cd frontend && npm install @capacitor/core @capacitor/cli && npx cap init \"Printer Ink\" \"com.myproject.app\" --web-dir=out && npm install @capacitor/android && npx cap add android",
-	  "updateAPK": "cd frontend && npm run build && npx cap sync",
-	  "createAPK": "cd frontend && npx cap open android"
+    "start": "concurrently \"cd backend && npm run start:dev\" \"cd frontend/client && npm run dev\" \"cd frontend/admin && npm run dev\"",
+    "init-all": "npm install && cd backend && npm install && cd ../frontend/client && npm install && cd ../admin && npm install",
+    "init-APK": "cd frontend/client && npm install @capacitor/core @capacitor/cli && npx cap init \"Printer Ink\" \"com.myproject.app\" --web-dir=out && npm install @capacitor/android && npx cap add android",
+    "updateAPK": "cd frontend/client && npm run build && npx cap sync",
+    "createAPK": "cd frontend/client && npx cap open android"
   },
-
   "keywords": [],
   "author": "",
   "license": "ISC",

@@ -6,6 +6,7 @@ export interface Employeer {
 	phone: string;
 	fullname: string;
 	role: string;
+	password: string;
 }
 
 import { Injectable } from '@nestjs/common';

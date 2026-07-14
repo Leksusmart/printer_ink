@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 // Структура
 export interface Request {
     id: number;
@@ -38,15 +39,18 @@ export interface ImputRequestData {
     guids: string[];
 }
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CartridgesService } from '../cartridges/cartridges.service';
+import { AdminService } from '../admin/admin.service';
 
 @Injectable()
 export class RequestsService {
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly cartridgesService: CartridgesService,
+        @Inject(forwardRef(() => AdminService)) // Внедряем админку
+        private readonly adminService: AdminService
     ) { }
 
     async findAll(): Promise<Request[]> {
@@ -144,7 +148,6 @@ export class RequestsService {
 
     async createRequest(data: ImputRequestData): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
-            console.log('guid:',data.guid, 'model:',data.model, 'amount:',data.amount);
             if (data.guid !== "") {
                 // Если картридж уже существует
                 // Меняем его статус на пустой или сломанный
@@ -179,7 +182,7 @@ export class RequestsService {
                     ];
 
                     await this.databaseService.query(queryText, queryParams);
-
+                    await this.adminService.checkAndAutoCreateRefillRequest();
                     return {
                         success: true,
                         cartridgesAmount: 0,
@@ -254,7 +257,7 @@ export class RequestsService {
 
                 // Вытаскиваем из строк базы чистый массив строк
                 const savedGuids = result.rows.map(row => row.guid);
-
+                await this.adminService.checkAndAutoCreateRefillRequest();
                 return {
                     success: true,
                     cartridgesAmount: savedGuids.length,

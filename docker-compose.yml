@@ -28,12 +28,27 @@ services:
     depends_on:
       - postgres
 
-  frontend:
-    build: ./frontend
-    container_name: ink_frontend
+  frontend-client:
+    build:
+      context: ./frontend/client
+      dockerfile: client.Dockerfile
+    container_name: ink_frontend_client
     restart: always
     ports:
       - "3001:3001"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+
+  frontend-admin:
+    build:
+      context: ./frontend/admin
+      dockerfile: admin.Dockerfile
+    container_name: ink_frontend_admin
+    restart: always
+    ports:
+      - "3002:3002" # Админка будет доступна в браузере по адресу localhost:3002
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:3000
     depends_on:

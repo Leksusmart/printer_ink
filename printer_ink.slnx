@@ -7,6 +7,11 @@
     <File Path="backend/src/app.service.ts" />
     <File Path="backend/src/main.ts" />
   </Folder>
+  <Folder Name="/backend/src/admin/">
+    <File Path="backend/src/admin/admin.controller.ts" />
+    <File Path="backend/src/admin/admin.module.ts" />
+    <File Path="backend/src/admin/admin.service.ts" />
+  </Folder>
   <Folder Name="/backend/src/cartridges/">
     <File Path="backend/src/cartridges/cartridges.controller.ts" />
     <File Path="backend/src/cartridges/cartridges.module.ts" />
@@ -27,12 +32,18 @@
     <File Path="backend/src/requests/requests.service.ts" />
   </Folder>
   <Folder Name="/frontend/" />
-  <Folder Name="/frontend/app/">
-    <File Path="frontend/app/globals.css" />
-    <File Path="frontend/app/layout.tsx" />
-    <File Path="frontend/app/page.tsx" />
+  <Folder Name="/frontend/admin/" />
+  <Folder Name="/frontend/admin/app/">
+    <File Path="frontend/admin/app/page.tsx" />
   </Folder>
-  <Folder Name="/frontend/app/dashboard/">
-    <File Path="frontend/app/dashboard/page.tsx" />
+  <Folder Name="/frontend/admin/app/dashboard/">
+    <File Path="frontend/admin/app/dashboard/page.tsx" />
+  </Folder>
+  <Folder Name="/frontend/client/" />
+  <Folder Name="/frontend/client/app/">
+    <File Path="frontend/client/app/page.tsx" />
+  </Folder>
+  <Folder Name="/frontend/client/app/dashboard/">
+    <File Path="frontend/client/app/dashboard/page.tsx" />
   </Folder>
 </Solution>

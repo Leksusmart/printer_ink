@@ -30,37 +30,44 @@ import { RequestsModule } from './requests/requests.module';
 import { RequestsController } from './requests/requests.controller';
 import { RequestsService } from './requests/requests.service';
 
+import { AdminModule } from './admin/admin.module';
+import { AdminController } from './admin/admin.controller';
+import { AdminService } from './admin/admin.service';
+
 // Декоратор Module настраивает структуру текущего модуля с помощью специальных массивов
 @Module({
-  // imports: список других модулей, чьи возможности (сервисы) нужны внутри этого модуля
-  // Найдите массив imports и дополните настройку ConfigModule:
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: ['.env', 'backend/.env', './backend/.env']
-    }),
-    DatabaseModule,
-    CartridgesModule,
-    EmployersModule,
-    RequestsModule,
-  ],
+    // imports: список других модулей, чьи возможности (сервисы) нужны внутри этого модуля
+    // Найдите массив imports и дополните настройку ConfigModule:
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: ['.env', 'backend/.env', './backend/.env']
+        }),
+        DatabaseModule,
+        CartridgesModule,
+        EmployersModule,
+        RequestsModule,
+        AdminModule,
+    ],
 
 
-  // controllers: список контроллеров, которые создаются и запускаются внутри этого модуля
-  controllers: [
-    AppController,
-    CartridgesController,
-    EmployersController,
-    RequestsController,
-  ],
-  // providers: список сервисов, которые NestJS создаст и сможет автоматически внедрять (DI)
-  providers: [
-    AppService,
-    DatabaseService,
-    CartridgesService,
-    EmployersService,
-    RequestsService,
-  ],
+    // controllers: список контроллеров, которые создаются и запускаются внутри этого модуля
+    controllers: [
+        AppController,
+        CartridgesController,
+        EmployersController,
+        RequestsController,
+        AdminController,
+    ],
+    // providers: список сервисов, которые NestJS создаст и сможет автоматически внедрять (DI)
+    providers: [
+        AppService,
+        DatabaseService,
+        CartridgesService,
+        EmployersService,
+        RequestsService,
+        AdminService,
+    ],
 })
 // Пустой класс, который становится модулем благодаря декоратору выше
-export class AppModule {}
+export class AppModule { }

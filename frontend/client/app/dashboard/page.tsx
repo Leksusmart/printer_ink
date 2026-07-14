@@ -50,14 +50,14 @@ function DashboardContent() {
     const [error, setError] = useState('');
 
     // ПРОВЕРКА: форма валидна, если каждая строка либо успешно нашла картридж по GUID,
-    // либо (в ручном режиме) заполнены модель и количество
+    // либо (в ручном режиме) заполнены модель
     const isFormValid = cartridges.every((item) =>
         item.mode === 'guid'
             ? item.isResolved
-            : item.model.trim() !== '' && item.count.toString().trim() !== ''
+            : item.model.trim() !== ''
     );
 
-    // 🔄 ЭФФЕКТ: срабатывает АВТОМАТИЧЕСКИ сразу при открытии этой страницы в браузере
+    // срабатывает АВТОМАТИЧЕСКИ сразу при открытии этой страницы в браузере
     useEffect(() => {
 
         async function loadInitialData() {
