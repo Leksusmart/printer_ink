@@ -1,24 +1,19 @@
 ﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-// Импортируем useRouter (для кнопки "Выйти") и useSearchParams (чтобы прочитать телефон из адреса страницы)
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// Один картридж в форме заявки.
-// mode: 'guid'   — обычный путь: сканируем/вводим GUID, модель и статус подтягиваются с бэкенда
-// mode: 'manual' — резервный путь: у картриджа нет GUID/QR, вводим модель и количество вручную
 interface CartridgeItem {
     mode: 'guid' | 'manual';
     guid: string;
     model: string;
-    status: string;       // актуально только для mode: 'guid' — статус, пришедший с бэкенда
-    count: string;        // актуально только для mode: 'manual'
+    status: string;
+    count: string;
     isDefective: boolean;
-    isResolved: boolean;  // GUID найден и подтянут с бэкенда
+    isResolved: boolean;
     lookupError: string;
 }
 
-// Описываем, как выглядит сотрудник в базе данных
 interface Employer {
     id: number;
     phone: string;
@@ -26,65 +21,54 @@ interface Employer {
     role: string;
 }
 
-const emptyRowForType = (_type: 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ'): CartridgeItem => (
-    { mode: 'guid', guid: '', model: '', status: '', count: '', isDefective: false, isResolved: false, lookupError: '' }
-);
+const emptyRowForType = (_type: 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ'): CartridgeItem => ({
+    mode: 'guid', guid: '', model: '', status: '', count: '', isDefective: false, isResolved: false, lookupError: ''
+});
 
 function DashboardContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    // Читаем телефон из адреса сайта (например, ?phone=89008000010)
     const userPhone = searchParams.get('phone') || '';
 
-    // 1. Храним реального сотрудника из БД здесь. По умолчанию — null (еще не загрузился)
     const [currentUser, setCurrentUser] = useState<Employer | null>(null);
-
-    // 2. Храним реальный список моделей картриджей из БД здесь (нужен для ручного режима)
     const [availableModels, setAvailableModels] = useState<string[]>([]);
 
-    // Состояния формы заявки
     const [operationType, setOperationType] = useState<'ПРИЕМКА' | 'ПОЛУЧЕНИЕ'>('ПРИЕМКА');
     const [cartridges, setCartridges] = useState<CartridgeItem[]>([emptyRowForType('ПРИЕМКА')]);
     const [comment, setComment] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // ПРОВЕРКА: форма валидна, если каждая строка либо успешно нашла картридж по GUID,
-    // либо (в ручном режиме) заполнены модель
     const isFormValid = cartridges.every((item) =>
-        item.mode === 'guid'
-            ? item.isResolved
-            : item.model.trim() !== ''
+        item.mode === 'guid' ? item.isResolved : item.model.trim() !== ''
     );
 
-    // срабатывает АВТОМАТИЧЕСКИ сразу при открытии этой страницы в браузере
     useEffect(() => {
-
         async function loadInitialData() {
             try {
                 setIsLoading(true);
+                if (!userPhone) throw new Error('Телефон не указан');
 
-                // --- ЗАПРОС 1: Получаем данные вошедшего сотрудника ---
-                if (!userPhone) {
-                    throw new Error('Телефон не указан в адресе страницы. Пожалуйста, авторизуйтесь заново.');
-                }
-                const employerResponse = await fetch(`http://localhost:3000/Employers/search?phone=${encodeURIComponent(userPhone)}`);
+                // === ИЗМЕНЕНИЕ: POST вместо GET ===
+                const employerResponse = await fetch('http://localhost:3000/Employers/admin-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: userPhone })
+                });
+
                 if (!employerResponse.ok) throw new Error('Не удалось загрузить данные сотрудника');
                 const employerData: Employer = await employerResponse.json();
-                setCurrentUser(employerData); // Сохраняем реального человека в память фронтенда!
+                setCurrentUser(employerData);
 
-                // --- ЗАПРОС 2: Получаем список моделей картриджей из БД (для ручного режима) ---
+                // Загрузка моделей
                 const cartridgesResponse = await fetch('http://localhost:3000/cartridges');
                 if (cartridgesResponse.ok) {
-                    const cartridgesData = await cartridgesResponse.json();
-                    const allModels: string[] = cartridgesData.map((c: { model: string }) => c.model);
-                    const uniqueModels = Array.from(new Set(allModels));
-                    setAvailableModels(uniqueModels);
+                    const data = await cartridgesResponse.json();
+                    const models = [...new Set(data.map((c: any) => c.model))];
+                    setAvailableModels(models);
                 }
-
             } catch (err) {
-                const error = err as Error;
-                setError(error.message || 'Ошибка загрузки данных');
+                setError((err as Error).message || 'Ошибка загрузки');
             } finally {
                 setIsLoading(false);
             }
@@ -359,8 +343,8 @@ function DashboardContent() {
         }
     };
 
-    if (isLoading) return <div className="flex min-h-screen items-center justify-center text-gray-500">Загрузка данных из БД...</div>;
-    if (error) return <div className="flex min-h-screen items-center justify-center font-medium text-red-500">{error}</div>;
+    if (isLoading) return <div className="flex min-h-screen items-center justify-center text-gray-500">Загрузка...</div>;
+    if (error) return <div className="flex min-h-screen items-center justify-center text-red-500">{error}</div>;
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans">
@@ -600,7 +584,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
     return (
-        <Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Загрузка панели...</div>}>
+        <Suspense fallback={<div>Загрузка панели...</div>}>
             <DashboardContent />
         </Suspense>
     );
