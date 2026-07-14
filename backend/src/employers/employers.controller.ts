@@ -25,39 +25,37 @@ export class EmployersController {
     return employer;
   }
 
-  @Post('admin-login')
-  async adminLogin(@Body() body: { phone: string; password?: string }) {
-    let checkedPhone = body.phone.trim();
+    @Post('admin-login')
+    async adminLogin(@Body() body: { phone: string; password?: string }) {
+        let checkedPhone = body.phone.trim();
 
-    if (checkedPhone.length === 11 && checkedPhone.startsWith('7')) {
-      checkedPhone = '+' + checkedPhone;
-    } else if (checkedPhone.length === 11 && checkedPhone.startsWith('8')) {
-      checkedPhone = '+7' + checkedPhone.slice(1);
+        if (checkedPhone.length === 11 && checkedPhone.startsWith('7')) {
+            checkedPhone = '+' + checkedPhone;
+        } else if (checkedPhone.length === 11 && checkedPhone.startsWith('8')) {
+            checkedPhone = '+7' + checkedPhone.slice(1);
+        }
+
+        const employer = await this.employersService.findByPhone(checkedPhone);
+
+        if (!employer) {
+            throw new UnauthorizedException('Сотрудник не найден');
+        }
+
+        if (employer.role !== 'Admin') {
+            throw new UnauthorizedException('У вас нет прав администратора');
+        }
+
+        // Для клиента (без пароля) — пропускаем проверку пароля
+        if (body.password) {
+            const isPasswordMatching = await bcrypt.compare(body.password, employer.password!);
+            if (!isPasswordMatching) {
+                throw new UnauthorizedException('Неверный телефон или пароль');
+            }
+        }
+
+        const { password, ...result } = employer;
+        return result;
     }
-
-    const employer = await this.employersService.findByPhone(checkedPhone);
-
-    if (!employer) {
-      throw new UnauthorizedException('Неверный телефон или пароль');
-    }
-
-    if (employer.role !== 'Admin') {
-      throw new UnauthorizedException('У вас нет прав администратора');
-    }
-
-    if (!employer.password || !body.password) {
-      throw new UnauthorizedException('Неверный телефон или пароль');
-    }
-
-    const isPasswordMatching = await bcrypt.compare(body.password, employer.password!);
-
-    if (!isPasswordMatching) {
-      throw new UnauthorizedException('Неверный телефон или пароль');
-    }
-
-    const { password, ...result } = employer;
-    return result;
-  }
 
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
