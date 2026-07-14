@@ -139,19 +139,67 @@ export class AdminService {
   async getSettings() {
     const result = await this.databaseService.query(`SELECT * FROM public.dashboard_settings WHERE id = 1`);
     if (result.rows.length === 0) {
-      return { /* defaults */ filled_red_from: 0, /* ... */ refill_threshold: 10 };
+      return {
+        filled_red_from: 0, filled_red_to: 5,
+        filled_yellow_from: 6, filled_yellow_to: 9,
+        filled_green_from: 10, filled_green_to: 999,
+        empty_red_from: 10, empty_red_to: 999,
+        empty_yellow_from: 6, empty_yellow_to: 9,
+        empty_green_from: 0, empty_green_to: 5,
+        refill_threshold: 10
+      };
     }
     return result.rows[0];
   }
 
   async updateSettings(settings: any) {
-    await this.databaseService.query(/* update query */);
+    await this.databaseService.query(`
+      UPDATE public.dashboard_settings 
+      SET filled_red_from = $1, filled_red_to = $2,
+          filled_yellow_from = $3, filled_yellow_to = $4,
+          filled_green_from = $5, filled_green_to = $6,
+          empty_red_from = $7, empty_red_to = $8,
+          empty_yellow_from = $9, empty_yellow_to = $10,
+          empty_green_from = $11, empty_green_to = $12,
+          refill_threshold = $13
+      WHERE id = 1`, [
+        settings.filled_red_from, settings.filled_red_to,
+        settings.filled_yellow_from, settings.filled_yellow_to,
+        settings.filled_green_from, settings.filled_green_to,
+        settings.empty_red_from, settings.empty_red_to,
+        settings.empty_yellow_from, settings.empty_yellow_to,
+        settings.empty_green_from, settings.empty_green_to,
+        settings.refill_threshold
+      ]);
     await this.checkAndAutoCreateRefillRequest();
     return { success: true };
   }
 
   async checkAndAutoCreateRefillRequest() {
-    // logic remains the same, but cleaned
-    // ... (full method kept for safety)
+    const settingsQuery = await this.databaseService.query(`SELECT refill_threshold FROM public.dashboard_settings WHERE id = 1`);
+    const threshold = settingsQuery.rows[0]?.refill_threshold ?? 10;
+
+    const emptyCountQuery = await this.databaseService.query(`SELECT COUNT(*)::int as count FROM public.cartridges WHERE status = 'Ожидает заправки'`);
+    const currentEmptyCount = emptyCountQuery.rows[0]?.count ?? 0;
+
+    if (currentEmptyCount >= threshold && currentEmptyCount > 0) {
+      console.log(`[Автоматизация] Запасы (${currentEmptyCount}) >= порог (${threshold})`);
+
+      const emptyCartridgesQuery = await this.databaseService.query(`SELECT id FROM public.cartridges WHERE status = 'Пустой'`);
+      const cartridgeIds = emptyCartridgesQuery.rows.map(row => row.id);
+
+      const result = await this.databaseService.query(`
+        INSERT INTO public.requests (type, isdefective, status, employee, lastchangeby, comment) 
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+      `, ['Ожидает заправки', false, 'Создана', null, null, 'Автоматическая заявка']);
+
+      const newRequestId = result.rows[0].id;
+
+      for (const cartridgeId of cartridgeIds) {
+        await this.databaseService.query(`INSERT INTO public.requestslist (requestid, cartridgeid) VALUES ($1, $2)`, [newRequestId, cartridgeId]);
+      }
+
+      console.log(`[Автоматизация] Заявка #${newRequestId} создана`);
+    }
   }
 }
