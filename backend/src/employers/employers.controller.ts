@@ -3,63 +3,58 @@ import { Controller, Get, Post, Body, Query, NotFoundException, UnauthorizedExce
 import { EmployersService } from './employers.service';
 import { CreateEmployerDto } from './dto/create-employer.dto';
 import { PhoneQueryDto } from './dto/phone-query.dto';
+import { normalizePhone } from '../utils/phone.helper'
 
 @Controller('employers')
 export class EmployersController {
-	constructor(private readonly employersService: EmployersService) { }
+    constructor(private readonly employersService: EmployersService) { }
 
-	@Get()
-	async findAll() {
-		return this.employersService.findAll();
-	}
+    @Get()
+    async findAll() {
+        return this.employersService.findAll();
+    }
 
-	@Get('search')
-	@UsePipes(new ValidationPipe({ transform: true }))
-	async checkPhone(@Query() query: PhoneQueryDto) {
-		const employer = await this.employersService.findByPhone(query.phone);
+    @Get('search')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async checkPhone(@Query() query: PhoneQueryDto) {
+        const employer = await this.employersService.findByPhone(query.phone);
 
-		if (!employer) {
-			throw new NotFoundException('Сотрудник с таким номером не найден');
-		}
+        if (!employer) {
+            throw new NotFoundException('Сотрудник с таким номером не найден');
+        }
 
-		return employer;
-	}
+        return employer;
+    }
 
-	@Post('admin-login')
-	async adminLogin(@Body() body: { phone: string; password?: string }) {
-		let checkedPhone = body.phone.trim();
+    @Post('admin-login')
+    async adminLogin(@Body() body: { phone: string; password?: string }) {
+        let checkedPhone = normalizePhone(body.phone);
 
-		if (checkedPhone.length === 11 && checkedPhone.startsWith('7')) {
-			checkedPhone = '+' + checkedPhone;
-		} else if (checkedPhone.length === 11 && checkedPhone.startsWith('8')) {
-			checkedPhone = '+7' + checkedPhone.slice(1);
-		}
+        const employer = await this.employersService.findByPhone(checkedPhone);
 
-		const employer = await this.employersService.findByPhone(checkedPhone);
+        if (!employer) {
+            throw new UnauthorizedException('Сотрудник не найден');
+        }
 
-		if (!employer) {
-			throw new UnauthorizedException('Сотрудник не найден');
-		}
+        if (employer.role !== 'Admin') {
+            throw new UnauthorizedException('У вас нет прав администратора');
+        }
 
-		if (employer.role !== 'Admin') {
-			throw new UnauthorizedException('У вас нет прав администратора');
-		}
+        // Для клиента (без пароля) — пропускаем проверку пароля
+        if (body.password) {
+            const isPasswordMatching = await bcrypt.compare(body.password, employer.password!);
+            if (!isPasswordMatching) {
+                throw new UnauthorizedException('Неверный пароль');
+            }
+        }
 
-		// Для клиента (без пароля) — пропускаем проверку пароля
-		if (body.password) {
-			const isPasswordMatching = await bcrypt.compare(body.password, employer.password!);
-			if (!isPasswordMatching) {
-				throw new UnauthorizedException('Неверный телефон или пароль');
-			}
-		}
+        const { password, ...result } = employer;
+        return result;
+    }
 
-		const { password, ...result } = employer;
-		return result;
-	}
-
-	@Post()
-	@UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-	async create(@Body() createEmployerDto: CreateEmployerDto) {
-		return this.employersService.create(createEmployerDto);
-	}
+    @Post()
+    @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+    async create(@Body() createEmployerDto: CreateEmployerDto) {
+        return this.employersService.create(createEmployerDto);
+    }
 }

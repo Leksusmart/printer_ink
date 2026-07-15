@@ -4,7 +4,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import * as bcrypt from 'bcrypt';
-
+import { normalizePhone } from '../utils/phone.helper'
 export interface Employer {
   id: number;
   phone: string;
@@ -27,7 +27,7 @@ export class EmployersService {
   }
 
   async findByPhone(phone: string): Promise<Employer | null> {
-    const normalizedPhone = this.normalizePhone(phone);
+    const normalizedPhone = normalizePhone(phone);
     const result = await this.databaseService.query(`
       SELECT *
       FROM public.employers 
@@ -48,7 +48,7 @@ export class EmployersService {
       throw new BadRequestException('Телефон и ФИО обязательны');
     }
 
-    const normalizedPhone = this.normalizePhone(phone);
+      const normalizedPhone = normalizePhone(phone);
 
     const exists = await this.databaseService.query(
       'SELECT id FROM public.employers WHERE phone = $1', 
@@ -67,15 +67,5 @@ export class EmployersService {
     `, [normalizedPhone, fullname.trim(), role, hashedPassword]);
 
     return result.rows[0];
-  }
-
-  normalizePhone(phone: string): string {
-    let checkedPhone = phone.trim();
-    if (checkedPhone.length === 11 && checkedPhone.startsWith('7')) {
-      checkedPhone = '+' + checkedPhone;
-    } else if (checkedPhone.length === 11 && checkedPhone.startsWith('8')) {
-      checkedPhone = '+7' + checkedPhone.slice(1);
-    }
-    return checkedPhone;
   }
 }

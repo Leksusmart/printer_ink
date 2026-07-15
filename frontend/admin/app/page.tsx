@@ -25,17 +25,16 @@ export default function AdminLoginPage() {
                 },
                 body: JSON.stringify({
                     phone: phone,
-                    password: password // Передаем пароль в теле запроса
+                    password: password
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Неверный телефон или пароль');
+                throw new Error(errorData.message || 'Ошибка связи');
             }
 
             const data = await response.json();
-            console.log('Успешный вход в админку! Данные:', data);
 
             // Сохраняем токен или роль администратора, чтобы защитить другие страницы
             localStorage.setItem('admin_session', JSON.stringify(data));

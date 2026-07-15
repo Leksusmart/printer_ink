@@ -35,8 +35,8 @@ export const adminApi = {
     return res.json();
   },
 
-  async createUser(data: any) {
-    const res = await fetch('http://localhost:3000/admin/create-user', {
+    async createUser(data: any) {
+      const res = await fetch(`${API_BASE}/create-user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -46,7 +46,7 @@ export const adminApi = {
   },
 
   async createCartridge(data: any) {
-    const res = await fetch('http://localhost:3000/admin/create-cartridge', {
+      const res = await fetch(`${API_BASE}/create-cartridge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -56,7 +56,7 @@ export const adminApi = {
   },
 
   async scrapCartridge(guid: string) {
-    const res = await fetch('http://localhost:3000/admin/scrap-cartridge', {
+      const res = await fetch(`${API_BASE}/scrap-cartridge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ guid })
@@ -66,7 +66,7 @@ export const adminApi = {
   },
   
   async getHistory() {
-    const res = await fetch('http://localhost:3000/admin/history');
+      const res = await fetch(`${API_BASE}/history`);
     if (!res.ok) throw new Error('Ошибка загрузки истории');
     return res.json();
   }

@@ -38,10 +38,6 @@ export default function LoginPage() {
 
             // 6. Если всё хорошо, получаем данные пользователя
             const user = await response.json();
-            console.log('Успешный вход! Данные сотрудника:', user);
-
-            // Здесь можно сохранить данные (например, имя или роль) в локальную память, но пока просто переходим
-            alert(`Добро пожаловать, ${user.fullname}!`);
 
             // 7. Перенаправляем пользователя на страницу /dashboard
             router.push(`/dashboard?phone=${encodeURIComponent(phone)}`);
