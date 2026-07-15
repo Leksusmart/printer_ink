@@ -69,5 +69,11 @@ export const adminApi = {
     });
     if (!res.ok) throw new Error('Ошибка списания картриджа');
     return res.json();
+  },
+  
+  async getHistory() {
+    const res = await fetch('http://localhost:3000/admin/history');
+    if (!res.ok) throw new Error('Ошибка загрузки истории');
+    return res.json();
   }
 };
