@@ -226,18 +226,6 @@ ALTER TABLE ONLY public.requestslist ALTER COLUMN id SET DEFAULT nextval('public
 
 CREATE TABLE public.dashboard_settings (
     id integer PRIMARY KEY DEFAULT 1,
-    filled_red_from integer DEFAULT 10,
-    filled_red_to integer DEFAULT 999,
-    filled_yellow_from integer DEFAULT 6,
-    filled_yellow_to integer DEFAULT 9,
-    filled_green_from integer DEFAULT 0,
-    filled_green_to integer DEFAULT 5,
-    empty_red_from integer DEFAULT 10,
-    empty_red_to integer DEFAULT 999,
-    empty_yellow_from integer DEFAULT 6,
-    empty_yellow_to integer DEFAULT 9,
-    empty_green_from integer DEFAULT 0,
-    empty_green_to integer DEFAULT 5,
     refill_threshold integer DEFAULT 10,
     CONSTRAINT single_row CHECK (id = 1) -- Гарантирует, что строка в таблице будет всегда только одна
 );

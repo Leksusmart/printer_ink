@@ -1,17 +1,36 @@
 'use client';
-
+import { useState, useEffect } from 'react';
 interface DashboardStatsProps {
     stats: any;
 }
 
 export default function DashboardStats({ stats }: DashboardStatsProps) {
+    const [threshold, setThreshold] = useState(10);
+
+    // Загружаем порог из настроек
+    useEffect(() => {
+        const loadThreshold = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/admin/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    setThreshold(data.refillThreshold ?? 10);
+                }
+            } catch (e) {
+                console.error('Не удалось загрузить порог:', e);
+            }
+        };
+
+        loadThreshold();
+    }, []);
+
     if (!stats) {
         return <div className="text-center py-8 text-gray-500">Загрузка статистики...</div>;
     }
 
     const c = stats.counters || {};
     const h = stats.historyStats || {};
-
+    
     return (
         <>
             {/* Верхние статусные карточки */}
@@ -40,7 +59,7 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
                             <div className="text-5xl font-bold mt-3 text-gray-900">{c.empty ?? 'ERR'}</div>
                         </div>
                     </div>
-                    {c.empty >= thresholdValue && (
+                    {c.empty >= threshold && (
                         <p className="text-sm text-red-600 mt-2">Требуется заправка</p>
                     )}
                 </div>
@@ -56,7 +75,7 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
                             <div className="text-5xl font-bold mt-3 text-gray-900">{c.repair ?? 'ERR'}</div>
                         </div>
                     </div>
-                    {c.repair >= thresholdValue && (
+                    {c.repair >= threshold && (
                         <p className="text-sm text-red-600 mt-2">Требуется ремонт</p>
                     )}
                 </div>

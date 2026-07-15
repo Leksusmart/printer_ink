@@ -140,12 +140,6 @@ export class AdminService {
     const result = await this.databaseService.query(`SELECT * FROM public.dashboard_settings WHERE id = 1`);
     if (result.rows.length === 0) {
       return {
-        filled_red_from: 0, filled_red_to: 5,
-        filled_yellow_from: 6, filled_yellow_to: 9,
-        filled_green_from: 10, filled_green_to: 999,
-        empty_red_from: 10, empty_red_to: 999,
-        empty_yellow_from: 6, empty_yellow_to: 9,
-        empty_green_from: 0, empty_green_to: 5,
         refill_threshold: 10
       };
     }
