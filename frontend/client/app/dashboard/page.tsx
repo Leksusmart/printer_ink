@@ -224,6 +224,9 @@ function DashboardContent() {
         let allGeneratedGuids: string[] = [];
         let successfulCount = 0;
 
+        // Отдельно копим GUID-ы, сгенерированные бэкендом именно в ручном режиме —
+        // после отправки заявки по ним нужно показать QR-коды для печати
+        let manuallyCreatedCartridges: { guid: string; model: string; isDefective: boolean }[] = [];
 
         try {
             for (const item of cartridges) {
@@ -318,6 +321,13 @@ function DashboardContent() {
 
                 if (Array.isArray(result.GUIDs)) {
                     allGeneratedGuids = [...allGeneratedGuids, ...result.GUIDs];
+                    // Ручной режим — картриджи только что созданы бэкендом, для них нужны QR-коды
+                    if (item.mode === 'manual') {
+                        manuallyCreatedCartridges = [
+                            ...manuallyCreatedCartridges,
+                            ...result.GUIDs.map((guid: string) => ({ guid, model: item.model, isDefective: item.isDefective })),
+                        ];
+                    }
                 } else if (item.mode === 'guid') {
                     allGeneratedGuids = [...allGeneratedGuids, item.guid];
                 }
@@ -325,15 +335,20 @@ function DashboardContent() {
             }
 
             if (successfulCount > 0) {
-                alert(
-                    `Все заявки успешно созданы в PgAdmin!\n` +
-                    `Всего обработано заявок: ${successfulCount}\n\n` +
-                    `GUID-ы/QR-коды для маркировки:\n` +
-                    `${allGeneratedGuids.join('\n')}`
-                );
-
                 setCartridges([emptyRowForType(operationType)]);
                 setComment('');
+
+                // Сценарий ручного создания: были картриджи без GUID, бэкенд сам их создал —
+                // переходим на страницу с QR-кодами
+                if (manuallyCreatedCartridges.length > 0) {
+                    // Сначала стираем старое, если оно было
+                    sessionStorage.removeItem('generatedCartridges');
+
+                    // Записываем новое
+                    sessionStorage.setItem('generatedCartridges', JSON.stringify(manuallyCreatedCartridges));
+                    router.push(`/dashboard/pages/cartridgesQR?phone=${encodeURIComponent(userPhone)}`);
+                    return;
+                }
             }
 
         } catch (err) {
