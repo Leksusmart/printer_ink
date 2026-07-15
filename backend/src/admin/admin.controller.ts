@@ -12,7 +12,7 @@ export class AdminController {
     // Эндпоинт для верхних карточек и блоков статистики: GET /admin/stats
     @Get('stats')
     async getStats() {
-        return this.adminService.getDashboardStats();
+        return this.adminService.getStats();
     }
 
     @Get('history') async getHistory() { return this.adminService.getHistoryLogs(); }
@@ -33,7 +33,7 @@ export class AdminController {
 
     @Post('create-cartridge')
     async createCartridge(@Body() body: { model: string; guid: string; status: string; isdefective: boolean; adminId: number | null }) {
-        return this.adminService.createCartridgeInDb(body.model, body.guid, body.status, body.isdefective, body.adminId);
+        return this.adminService.createCartridge(body.model, body.guid, body.status, body.isdefective, body.adminId);
     }
     @Post('scrap-cartridge')
     async scrapCartridge(@Body() body: { guid: string }) {
