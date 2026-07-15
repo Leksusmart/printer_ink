@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface CartridgeModalProps {
   isOpen: boolean;
@@ -15,9 +15,32 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
   const [isDefective, setIsDefective] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [generating, setGenerating] = useState(false);
+
+  // Автогенерация GUID при открытии
+  useEffect(() => {
+    if (isOpen) {
+      generateNewGuid();
+    }
+  }, [isOpen]);
+
+  const generateNewGuid = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch('http://localhost:3000/admin/generate-guid');
+      const data = await res.json();
+      setGuid(data.guid);
+    } catch (err) {
+      setMessage('Не удалось сгенерировать GUID');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guid || !model) return;
+
     setLoading(true);
     setMessage('');
 
@@ -25,16 +48,26 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
       const res = await fetch('http://localhost:3000/admin/create-cartridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, guid, status, isdefective: isDefective })
+        body: JSON.stringify({ 
+          model, 
+          guid, 
+          status, 
+          isdefective: isDefective,
+          adminId: null // или взять из session если нужно
+        })
       });
 
       if (res.ok) {
         setMessage('Картридж успешно добавлен!');
-        setModel(''); setGuid('');
         onSuccess();
-        setTimeout(onClose, 1500);
+        setTimeout(() => {
+          onClose();
+          setModel('');
+          setGuid('');
+        }, 1200);
       } else {
-        throw new Error('Ошибка при создании картриджа');
+        const errorText = await res.text();
+        throw new Error(errorText || 'Ошибка создания');
       }
     } catch (err) {
       setMessage('Ошибка: ' + (err as Error).message);
@@ -53,28 +86,27 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
         {message && <div className={`mb-4 p-3 rounded ${message.includes('успешно') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{message}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input 
-            type="text" 
-            placeholder="Модель картриджа" 
-            value={model} 
-            onChange={e => setModel(e.target.value)} 
-            required 
-            className="w-full border p-3 rounded" 
-          />
-          <input 
-            type="text" 
-            placeholder="GUID" 
-            value={guid} 
-            onChange={e => setGuid(e.target.value)} 
-            required 
-            className="w-full border p-3 rounded" 
-          />
+          <div>
+            <label className="block text-sm mb-1">Модель</label>
+            <input type="text" value={model} onChange={e => setModel(e.target.value)} required className="w-full border p-3 rounded" placeholder="Например: HP 59A" />
+          </div>
 
-          <select value={status} onChange={e => setStatus(e.target.value)} className="w-full border p-3 rounded">
-            <option value="Ожидает заправки">Ожидает заправки</option>
-            <option value="Заправлен">Заправлен</option>
-            <option value="В ремонте">В ремонте</option>
-          </select>
+          <div>
+            <label className="block text-sm mb-1">GUID</label>
+            <div className="flex gap-2">
+              <input type="text" value={guid} readOnly className="flex-1 border p-3 rounded bg-gray-50" />
+              <button type="button" onClick={generateNewGuid} disabled={generating} className="px-4 border rounded hover:bg-gray-100">🔄</button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Статус</label>
+            <select value={status} onChange={e => setStatus(e.target.value)} className="w-full border p-3 rounded">
+              <option value="Ожидает заправки">Ожидает заправки</option>
+              <option value="Заправлен">Заправлен</option>
+              <option value="В ремонте">В ремонте</option>
+            </select>
+          </div>
 
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={isDefective} onChange={e => setIsDefective(e.target.checked)} />
@@ -83,7 +115,7 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
 
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={onClose} className="flex-1 py-3 border rounded">Отмена</button>
-            <button type="submit" disabled={loading} className="flex-1 py-3 bg-gray-700 text-white rounded">
+            <button type="submit" disabled={loading || !model} className="flex-1 py-3 bg-gray-700 text-white rounded">
               {loading ? 'Добавление...' : 'Добавить картридж'}
             </button>
           </div>

@@ -7,12 +7,6 @@ export const adminApi = {
     return res.json();
   },
 
-  async getHistory() {
-    const res = await fetch(`${API_BASE}/history`);
-    if (!res.ok) throw new Error('Ошибка загрузки истории');
-    return res.json();
-  },
-
   async getRefillRequests() {
     const res = await fetch(`${API_BASE}/refill`);
     if (!res.ok) throw new Error('Ошибка загрузки заявок на заправку');
