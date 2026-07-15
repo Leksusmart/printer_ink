@@ -17,6 +17,10 @@
     <File Path="backend/src/cartridges/cartridges.module.ts" />
     <File Path="backend/src/cartridges/cartridges.service.ts" />
   </Folder>
+  <Folder Name="/backend/src/cartridges/dto/">
+    <File Path="backend/src/cartridges/dto/create-cartridge.dto.ts" />
+    <File Path="backend/src/cartridges/dto/guid-query.dto.ts" />
+  </Folder>
   <Folder Name="/backend/src/database/">
     <File Path="backend/src/database/database.module.ts" />
     <File Path="backend/src/database/database.service.ts" />
@@ -26,18 +30,40 @@
     <File Path="backend/src/employers/employers.module.ts" />
     <File Path="backend/src/employers/employers.service.ts" />
   </Folder>
+  <Folder Name="/backend/src/employers/dto/">
+    <File Path="backend/src/employers/dto/create-employer.dto.ts" />
+    <File Path="backend/src/employers/dto/phone-query.dto.ts" />
+  </Folder>
   <Folder Name="/backend/src/requests/">
     <File Path="backend/src/requests/requests.controller.ts" />
     <File Path="backend/src/requests/requests.module.ts" />
     <File Path="backend/src/requests/requests.service.ts" />
+  </Folder>
+  <Folder Name="/backend/src/requests/dto/">
+    <File Path="backend/src/requests/dto/create-request.dto.ts" />
+    <File Path="backend/src/requests/dto/guid-query.dto.ts" />
+  </Folder>
+  <Folder Name="/backend/src/utils/">
+    <File Path="backend/src/utils/phone.helper.ts" />
   </Folder>
   <Folder Name="/frontend/" />
   <Folder Name="/frontend/admin/" />
   <Folder Name="/frontend/admin/app/">
     <File Path="frontend/admin/app/page.tsx" />
   </Folder>
+  <Folder Name="/frontend/admin/app/api/">
+    <File Path="frontend/admin/app/api/adminApi.ts" />
+  </Folder>
   <Folder Name="/frontend/admin/app/dashboard/">
     <File Path="frontend/admin/app/dashboard/page.tsx" />
+  </Folder>
+  <Folder Name="/frontend/admin/app/dashboard/components/">
+    <File Path="frontend/admin/app/dashboard/components/CartridgeModal.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/DashboardStats.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/RequestsTable.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/ScrapModal.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/SettingsModal.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/UserModal.tsx" />
   </Folder>
   <Folder Name="/frontend/client/" />
   <Folder Name="/frontend/client/app/">
@@ -45,5 +71,9 @@
   </Folder>
   <Folder Name="/frontend/client/app/dashboard/">
     <File Path="frontend/client/app/dashboard/page.tsx" />
+  </Folder>
+  <Folder Name="/frontend/client/app/dashboard/pages/" />
+  <Folder Name="/frontend/client/app/dashboard/pages/cartridgesQR/">
+    <File Path="frontend/client/app/dashboard/components/cartridgesQR/page.tsx" />
   </Folder>
 </Solution>
