@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Controller, Get, Post, Body, Query, NotFoundException, BadRequestException } from '@nestjs/common';
 import { RequestsService } from '../requests/requests.service';
+import { CreateRequestDto } from './dto/create-request.dto';
 
 @Controller('requests')
 export class RequestsController {
@@ -12,9 +13,10 @@ export class RequestsController {
         return this.requestsService.findAll();
     }
 
-    @Post() // Этот метод просто ловит данные от фронтенда и отправляет их в сервис
-    async createRequest(@Body() requestData: any) {
-        return this.requestsService.createRequest(requestData);
+    @Post()
+    async create(@Body() createRequestDto: CreateRequestDto) {
+        const result = await this.requestsService.createRequest(createRequestDto);
+        return result;
     }
 
     @Get('search')

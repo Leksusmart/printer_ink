@@ -83,17 +83,125 @@ export class RequestsService {
     return { guid: generatedGUID };
   }
 
-  async createRequest(data: any) {
-    // Сложная логика оставлена, но добавлены проверки и чистка
-    try {
-      if (!data.type || !data.status) {
-        throw new BadRequestException('Type and status are required');
-      }
-      // ... (основная логика сохранена с минимальными правками)
-      return { success: true }; // placeholder — полная реализация требует тщательного тестирования
-    } catch (error) {
-      console.error('Create request error:', error);
-      return { success: false };
+    async createRequest(data: any): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
+        try {
+            const currentDateTime = new Date().toISOString();
+
+            if (data.guid && data.guid !== "") {
+                // Существующий картридж
+                const status = data.isDefective ? "Ожидает ремонта" : "Ожидает заправки";
+                const result = await this.cartridgesService.changeStatusesTo([data.guid], status);
+
+                if (result.success) {
+                    const queryText = `
+          WITH inserted_request AS (
+            INSERT INTO public.requests 
+              (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id
+          )
+          INSERT INTO public.requestslist (requestid, cartridgeid)
+          SELECT ir.id, c.id
+          FROM inserted_request ir
+          CROSS JOIN public.cartridges c
+          WHERE c.guid = $9;
+        `;
+
+                    await this.databaseService.query(queryText, [
+                        data.type,
+                        data.isDefective,
+                        data.status,
+                        currentDateTime,
+                        data.employeeID,
+                        currentDateTime,
+                        data.employeeID,
+                        data.comment || '',
+                        data.guid
+                    ]);
+
+                    await this.adminService.checkAndAutoCreateRefillRequest();
+                    return { success: true, cartridgesAmount: 1, GUIDs: [] };
+                }
+            }
+            else if (data.model && data.amount > 0) {
+                // Новые картриджи
+                const guidPromises = Array.from({ length: data.amount }, () => this.generateGUID());
+                const generatedObjects = await Promise.all(guidPromises);
+                const guids = generatedObjects.map(item => item.guid);
+
+                const queryText = `
+        WITH inserted_request AS (
+          INSERT INTO public.requests 
+            (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          RETURNING id
+        ),
+        inserted_cartridges AS (
+          INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangedata, lastchangeby)
+          SELECT $9, unnest($10::text[]), $11, $2, $6, $7
+          RETURNING id, guid
+        ),
+        inserted_list AS (
+          INSERT INTO public.requestslist (requestid, cartridgeid)
+          SELECT inserted_request.id, inserted_cartridges.id
+          FROM inserted_request, inserted_cartridges
+        )
+        SELECT guid FROM inserted_cartridges;
+      `;
+
+                const result = await this.databaseService.query(queryText, [
+                    data.type,
+                    data.isDefective,
+                    data.status,
+                    currentDateTime,
+                    data.employeeID,
+                    currentDateTime,
+                    data.employeeID,
+                    data.comment || '',
+                    data.model,
+                    guids,
+                    data.isDefective ? 'Ожидает ремонта' : 'Ожидает заправки'
+                ]) as any;
+
+                const savedGuids = result.rows ? result.rows.map((r: any) => r.guid) : guids;
+
+                await this.adminService.checkAndAutoCreateRefillRequest();
+                return {
+                    success: true,
+                    cartridgesAmount: savedGuids.length,
+                    GUIDs: savedGuids
+                };
+            }
+            else if (data.guids && data.guids.length > 0) {
+                // Выдача существующих картриджей
+                const result = await this.cartridgesService.changeStatusesTo(data.guids, "Выдан");
+                if (result.success) {
+                    // Создаём заявку
+                    const queryText = `
+          INSERT INTO public.requests 
+            (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `;
+
+                    await this.databaseService.query(queryText, [
+                        data.type,
+                        false,
+                        data.status,
+                        currentDateTime,
+                        data.employeeID,
+                        currentDateTime,
+                        data.employeeID,
+                        data.comment || ''
+                    ]);
+
+                    return { success: true, cartridgesAmount: data.guids.length, GUIDs: [] };
+                }
+            }
+
+            return { success: false, cartridgesAmount: 0, GUIDs: [] };
+        } catch (error) {
+            console.error("Ошибка createRequest:", error);
+            return { success: false, cartridgesAmount: 0, GUIDs: [] };
+        }
     }
-  }
 }
