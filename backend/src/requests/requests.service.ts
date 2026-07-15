@@ -10,7 +10,7 @@ import { AdminService } from '../admin/admin.service';
 export interface Request {
   id: number;
   type: string;
-  isdefective: boolean; // fixed naming
+  isdefective: boolean;
   status: string;
   data: Date;
   employee: number;
@@ -54,7 +54,7 @@ export class RequestsService {
   }
 
   async generateGUID(): Promise<{ guid: string }> {
-    // ... (оставил логику генерации как есть, только почистил)
+    
     let errCounter = 0;
     const generationLimit = 100000;
     const hexArr = '0123456789abcdef'.split('');
