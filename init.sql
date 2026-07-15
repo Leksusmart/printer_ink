@@ -226,12 +226,12 @@ ALTER TABLE ONLY public.requestslist ALTER COLUMN id SET DEFAULT nextval('public
 
 CREATE TABLE public.dashboard_settings (
     id integer PRIMARY KEY DEFAULT 1,
-    refill_threshold integer DEFAULT 10,
+    refillThreshold integer DEFAULT 10,
     CONSTRAINT single_row CHECK (id = 1) -- Гарантирует, что строка в таблице будет всегда только одна
 );
 
 -- Вставляем дефолтную строчку со скриншота при создании базы
-INSERT INTO public.dashboard_settings (id) VALUES (1) ON CONFLICT DO NOTHING;
+INSERT INTO public.dashboard_settings (id, refillThreshold) VALUES (1, 10) ON CONFLICT DO NOTHING;
 
 
 --

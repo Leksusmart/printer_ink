@@ -14,7 +14,7 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
                 const res = await fetch('http://localhost:3000/admin/settings');
                 if (res.ok) {
                     const data = await res.json();
-                    setThreshold(data.refillThreshold ?? 10);
+                    setThreshold(data.refillthreshold);
                 }
             } catch (e) {
                 console.error('Не удалось загрузить порог:', e);
@@ -43,7 +43,7 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
                                 <span className="text-2xl">✅</span>
                                 <span className="font-medium">Готовые к выдаче</span>
                             </div>
-                            <div className="text-5xl font-bold mt-3 text-gray-900">{c.readyToIssue ?? 'ERR'}</div>
+                            <div className="text-5xl font-bold mt-3 text-gray-900">{c.readytoissue ?? 'ERR'}</div>
                         </div>
                     </div>
                 </div>
@@ -87,19 +87,19 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-8 text-center">
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{h.totalFilled ?? 'ERR'}</div>
+                        <div className="text-5xl font-bold text-gray-900">{h.totalfilled ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Заправлено</div>
                     </div>
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{h.totalIssued ?? 'ERR'}</div>
+                        <div className="text-5xl font-bold text-gray-900">{h.totalissued ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Выдано</div>
                     </div>
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{h.totalScrapped ?? 'ERR'}</div>
+                        <div className="text-5xl font-bold text-gray-900">{h.totalscrapped ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Списано брак</div>
                     </div>
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{c.totalCartridges ?? 'ERR'}</div>
+                        <div className="text-5xl font-bold text-gray-900">{c.totalcartridges ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Всего картриджей</div>
                     </div>
                     <div>

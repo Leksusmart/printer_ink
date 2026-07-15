@@ -2,10 +2,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
 
-import { Injectable, Inject, forwardRef, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CartridgesService } from '../cartridges/cartridges.service';
-import { AdminService } from '../admin/admin.service';
 
 export interface Request {
   id: number;
@@ -24,8 +23,6 @@ export class RequestsService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly cartridgesService: CartridgesService,
-    @Inject(forwardRef(() => AdminService))
-    private readonly adminService: AdminService
   ) { }
 
   async findAll(): Promise<Request[]> {
@@ -119,7 +116,6 @@ export class RequestsService {
                         data.guid
                     ]);
 
-                    await this.adminService.checkAndAutoCreateRefillRequest();
                     return { success: true, cartridgesAmount: 1, GUIDs: [] };
                 }
             }
@@ -165,7 +161,6 @@ export class RequestsService {
 
                 const savedGuids = result.rows ? result.rows.map((r: any) => r.guid) : guids;
 
-                await this.adminService.checkAndAutoCreateRefillRequest();
                 return {
                     success: true,
                     cartridgesAmount: savedGuids.length,

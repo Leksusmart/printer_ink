@@ -9,7 +9,7 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsModalProps) {
-    const [refillThreshold, setRefillThreshold] = useState(10);
+    const [refillthreshold, setrefillthreshold] = useState(10);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -22,7 +22,7 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
             const res = await fetch('http://localhost:3000/admin/settings');
             if (res.ok) {
                 const data = await res.json();
-                setRefillThreshold(data.refillThreshold ?? 10);
+                setrefillthreshold(data.refillthreshold ?? 10);
             }
         } catch (e) {
             console.error(e);
@@ -39,14 +39,17 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    refillThreshold
+                    refillthreshold
                 })
             });
 
             if (res.ok) {
                 setMessage('✅ Настройки сохранены!');
                 onSuccess();
-                setTimeout(onClose, 1500);
+                setTimeout(() => {
+                    onClose();
+                    window.location.reload();   // ← Полное обновление страницы
+                }, 1000);
             } else {
                 throw new Error('Ошибка сохранения');
             }
@@ -74,8 +77,8 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
                         <label className="font-medium">Порог для заявки на заправку включительно:</label>
                         <input
                             type="number"
-                            value={refillThreshold}
-                            onChange={(e) => setRefillThreshold(Number(e.target.value))}
+                            value={refillthreshold}
+                            onChange={(e) => setrefillthreshold(Number(e.target.value))}
                             className="w-24 text-center border rounded-lg px-4 py-2 text-lg font-semibold"
                         />
                     </div>
