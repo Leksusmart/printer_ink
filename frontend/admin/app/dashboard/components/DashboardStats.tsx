@@ -1,3 +1,5 @@
+'use client';
+
 interface DashboardStatsProps {
     stats: any;
 }
@@ -7,37 +9,86 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
         return <div className="text-center py-8 text-gray-500">Загрузка статистики...</div>;
     }
 
-    const counters = stats.counters || {};
-    const history = stats.historyStats || {};
+    const c = stats.counters || {};
+    const h = stats.historyStats || {};
 
     return (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            {/* Заправленные */}
-            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 text-2xl">✅</div>
-                    <h3 className="text-sm font-semibold text-gray-700">Заправленные</h3>
+        <>
+            {/* Верхние статусные карточки */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                {/* Готовые к выдаче */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 text-emerald-600">
+                                <span className="text-2xl">✅</span>
+                                <span className="font-medium">Готовые к выдаче</span>
+                            </div>
+                            <div className="text-5xl font-bold mt-3 text-gray-900">{c.readyToIssue ?? 'ERR'}</div>
+                        </div>
+                    </div>
                 </div>
-                <div className="mt-4 text-4xl font-bold text-gray-900">{counters.filled ?? 0}</div>
+
+                {/* Ожидают заправки */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 text-red-600">
+                                <span className="text-2xl">❌</span>
+                                <span className="font-medium">Ожидают заправки</span>
+                            </div>
+                            <div className="text-5xl font-bold mt-3 text-gray-900">{c.empty ?? 'ERR'}</div>
+                        </div>
+                    </div>
+                    {c.empty >= thresholdValue && (
+                        <p className="text-sm text-red-600 mt-2">Требуется заправка</p>
+                    )}
+                </div>
+
+                {/* Ожидают ремонта */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 text-amber-600">
+                                <span className="text-2xl">⚠️</span>
+                                <span className="font-medium">Ожидают ремонта</span>
+                            </div>
+                            <div className="text-5xl font-bold mt-3 text-gray-900">{c.repair ?? 'ERR'}</div>
+                        </div>
+                    </div>
+                    {c.repair >= thresholdValue && (
+                        <p className="text-sm text-red-600 mt-2">Требуется ремонт</p>
+                    )}
+                </div>
             </div>
 
-            {/* Пустые / Ожидают */}
-            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600 text-2xl">⏳</div>
-                    <h3 className="text-sm font-semibold text-gray-700">Ожидают заправки</h3>
-                </div>
-                <div className="mt-4 text-4xl font-bold text-gray-900">{counters.empty ?? 0}</div>
-            </div>
+            {/* Большая секция Статистика */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm">
+                <h2 className="text-2xl font-bold mb-8 text-center">Статистика</h2>
 
-            {/* Брак */}
-            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600 text-2xl">❌</div>
-                    <h3 className="text-sm font-semibold text-gray-700">Бракованные</h3>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-8 text-center">
+                    <div>
+                        <div className="text-5xl font-bold text-gray-900">{h.totalFilled ?? 'ERR'}</div>
+                        <div className="text-sm text-gray-600 mt-1">Заправлено</div>
+                    </div>
+                    <div>
+                        <div className="text-5xl font-bold text-gray-900">{h.totalIssued ?? 'ERR'}</div>
+                        <div className="text-sm text-gray-600 mt-1">Выдано</div>
+                    </div>
+                    <div>
+                        <div className="text-5xl font-bold text-gray-900">{h.totalScrapped ?? 'ERR'}</div>
+                        <div className="text-sm text-gray-600 mt-1">Списано брак</div>
+                    </div>
+                    <div>
+                        <div className="text-5xl font-bold text-gray-900">{c.totalCartridges ?? 'ERR'}</div>
+                        <div className="text-sm text-gray-600 mt-1">Всего картриджей</div>
+                    </div>
+                    <div>
+                        <div className="text-5xl font-bold text-gray-900">{c.idle ?? 'ERR'}</div>
+                        <div className="text-sm text-gray-600 mt-1">Простаивающих</div>
+                    </div>
                 </div>
-                <div className="mt-4 text-4xl font-bold text-gray-900">{counters.defective ?? 0}</div>
             </div>
-        </div>
+        </>
     );
 }
