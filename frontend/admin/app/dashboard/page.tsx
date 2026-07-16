@@ -20,23 +20,35 @@ export default function DashboardPage() {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
     const [stats, setStats] = useState<any>(null);
+    // const [historyData, setHistoryData] = useState<any[]>([]);
+    // const [refillData, setRefillData] = useState<any[]>([]);
+    // const [repairData, setRepairData] = useState<any[]>([]);
+
+    const [activeTableTab, setActiveTableTab] = useState(0);
     const [historyData, setHistoryData] = useState<any[]>([]);
-    const [refillData, setRefillData] = useState<any[]>([]);
-    const [repairData, setRepairData] = useState<any[]>([]);
+    const [refillRepairData, setRefillRepairData] = useState<any[]>([]);
+    const [receivingData, setReceivingData] = useState<any[]>([]);
+    const [scrapData, setScrapData] = useState<any[]>([]);
+    const [issuanceData, setIssuanceData] = useState<any[]>([]);
 
     const fetchAllData = async () => {
         try {
-            const [statsData, history, refill, repair] = await Promise.all([
+            const [statsData, history, refillRepair, receiving, scrap, issuance] = await Promise.all([
                 adminApi.getStats(),
                 adminApi.getHistory(),
-                adminApi.getRefillRequests(),
-                adminApi.getRepairRequests()
+                adminApi.getRefillRepairRequests(),
+                adminApi.getReceivingRequests(),
+                adminApi.getScrapRequests(),
+                adminApi.getIssuanceRequests()
             ]);
 
             setStats(statsData);
             setHistoryData(history || []);
-            setRefillData(refill || []);
-            setRepairData(repair || []);
+            setRefillRepairData(refillRepair || []);
+            setReceivingData(receiving || []);
+            setScrapData(scrap || []);
+            setIssuanceData(issuance || []);
+
         } catch (err) {
             console.error('Ошибка загрузки данных:', err);
         }
@@ -61,7 +73,6 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
-
         const session = localStorage.getItem('admin_session');
         if (!session) {
             router.push('/');
@@ -90,19 +101,84 @@ export default function DashboardPage() {
                     {admin && <p className="text-gray-600">Добро пожаловать, {admin.fullname}</p>}
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={() => setIsUserModalOpen(true)} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">Новый пользователь</button>
-                    <button onClick={() => setIsCartridgeModalOpen(true)} className="px-5 py-2.5 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-medium">Новый картридж</button>
-                    <button onClick={() => setIsScrapModalOpen(true)} className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium">Списать картридж</button>
-                    <button onClick={() => setIsSettingsModalOpen(true)} className="px-5 py-2.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium">Настройки</button>
+                    <button onClick={() => setIsUserModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95">Новый пользователь</button>
+                    <button onClick={() => setIsCartridgeModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95">Новый картридж</button>
+                    <button onClick={() => setIsScrapModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-red-600 rounded-xl font-medium transition-all active:scale-95 flex items-center gap-2">Списать картридж</button>
+                    <button onClick={() => setIsSettingsModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95 flex items-center gap-2">Настройки</button>
                 </div>
             </div>
 
             <DashboardStats stats={stats} />
 
-            <div className="space-y-8 mt-8">
-                <RequestsTable title="📋 Все заявки" data={historyData} />
-                <RequestsTable title="⚡ На заправку" data={refillData} />
-                <RequestsTable title="🛠️ На ремонт" data={repairData} />
+            {/* Блок таблиц */}
+            <div className="mt-8 overflow-hidden rounded-t-3xl border border-gray-200 bg-white shadow-sm">
+                {/* Вкладки */}
+                <div className="flex gap-1 border-b border-gray-200 bg-gray-50 px-6 pt-6 pb-4">
+                    {[
+                        '📋 История абсолютно всех заявок',
+                        '⚡ Заявки на заправку/ремонт',
+                        '📥 Заявки на приёмку',
+                        '🗑️ Заявки на списание',
+                        '📤 Заявки на получение',
+                    ].map((tabTitle, index) => {
+                        const isActive = activeTableTab === index;
+                        return (
+                            <button
+                                key={index}
+                                type="button"
+                                onClick={() => setActiveTableTab(index)}
+                                className={`px-6 py-3 text-sm font-medium rounded-t-2xl transition-all ${isActive
+                                    ? 'bg-white text-blue-600 border border-gray-200 border-b-white -mb-px shadow-sm'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 border border-transparent'
+                                    }`}
+                            >
+                                {tabTitle}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Содержимое таблицы */}
+                <div className="p-6">
+                    {activeTableTab === 0 && (
+                        <RequestsTable
+                            title="📋 История абсолютно всех заявок"
+                            data={historyData}
+                            showType
+                            showStatus
+                            showDefect
+                        />
+                    )}
+
+                    {activeTableTab === 1 && (
+                        <RequestsTable
+                            title="⚡ Заявки на заправку/ремонт"
+                            data={refillRepairData}
+                        />
+                    )}
+
+                    {activeTableTab === 2 && (
+                        <RequestsTable
+                            title="📥 Заявки на приёмку"
+                            data={receivingData}
+                            showDefect
+                        />
+                    )}
+
+                    {activeTableTab === 3 && (
+                        <RequestsTable
+                            title="🗑️ Заявки на списание"
+                            data={scrapData}
+                        />
+                    )}
+
+                    {activeTableTab === 4 && (
+                        <RequestsTable
+                            title="📤 Заявки на получение"
+                            data={issuanceData}
+                        />
+                    )}
+                </div>
             </div>
 
             <UserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSuccess={fetchAllData} />

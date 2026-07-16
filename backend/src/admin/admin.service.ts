@@ -90,23 +90,62 @@ export class AdminService {
 	`;
     }
 
+    // История абсолютно всех заявок
     async getHistoryLogs() {
         const query = this.getBaseRequestQuery();
         const result = await this.databaseService.query(query);
         return result.rows;
     }
 
-    async getRefillRequests() {
-        const filter = `JOIN public.cartridges c ON rl.cartridgeid = c.id WHERE c.status = 'Ожидает заправки'`;
+    // Объединённые заявки на заправку и ремонт (одна вкладка на фронте)
+    async getRefillRepairRequests() {
+        const filter = `
+            WHERE r.type IN ('Ожидает заправки', 'Ожидает ремонта')
+        `;
         const query = this.getBaseRequestQuery(filter);
         const result = await this.databaseService.query(query);
         return result.rows;
     }
 
-    async getRepairRequests() {
-        const filter = `JOIN public.cartridges c ON rl.cartridgeid = c.id WHERE c.status = 'Ожидает ремонта'`;
+    // Заявки на приёмку
+    async getReceivingRequests() {
+        const filter = `
+            WHERE r.type = 'Приёмка'
+        `;
         const query = this.getBaseRequestQuery(filter);
         const result = await this.databaseService.query(query);
+        return result.rows;
+    }
+
+    // Заявки на списание
+    async getScrapRequests() {
+        const filter = `
+            WHERE r.type = 'Списание'
+        `;
+        const query = this.getBaseRequestQuery(filter);
+        const result = await this.databaseService.query(query);
+        return result.rows;
+    }
+
+    // Заявки на получение
+    async getIssuanceRequests() {
+        const filter = `
+            WHERE r.type = 'Получение'
+        `;
+        const query = this.getBaseRequestQuery(filter);
+        const result = await this.databaseService.query(query);
+        return result.rows;
+    }
+
+    // Список картриджей (модель + GUID) для конкретной заявки — для окна "Подробнее"
+    async getCartridgesForRequest(requestId: number) {
+        const query = `
+            SELECT c.model, c.guid
+            FROM public.requestslist rl
+            JOIN public.cartridges c ON rl.cartridgeid = c.id
+            WHERE rl.requestid = $1
+        `;
+        const result = await this.databaseService.query(query, [requestId]);
         return result.rows;
     }
 
@@ -116,9 +155,16 @@ export class AdminService {
         }
 
         const result = await this.databaseService.query(`
-	  INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby)
-	  VALUES ($1, $2, $3, $4, $5) RETURNING *
-	`, [model.trim(), guid.trim(), status, isdefective, adminId]);
+            INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `, [
+            model.trim(),
+            guid.trim(),
+            status,
+            isdefective,
+            adminId
+        ]);
 
         return result.rows[0];
     }
@@ -134,9 +180,10 @@ export class AdminService {
         const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 
         const result = await this.databaseService.query(`
-	  INSERT INTO public.employers (phone, fullname, role, password)
-	  VALUES ($1, $2, $3, $4) RETURNING id, phone, fullname, role
-	`, [checkedPhone, fullname.trim(), role, hashedPassword]);
+			INSERT INTO public.employers (phone, fullname, role, password)
+			VALUES ($1, $2, $3, $4)
+			RETURNING id, phone, fullname, role
+		`, [checkedPhone, fullname.trim(), role, hashedPassword]);
 
         return result.rows[0];
     }

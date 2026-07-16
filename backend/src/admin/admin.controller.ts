@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -16,9 +16,24 @@ export class AdminController {
     }
 
     @Get('history') async getHistory() { return this.adminService.getHistoryLogs(); }
-    @Get('refill') async getRefill() { return this.adminService.getRefillRequests(); }
-    @Get('repair') async getRepair() { return this.adminService.getRepairRequests(); }
 
+    // Объединённая вкладка "Заявки на заправку/ремонт": GET /admin/refill-repair
+    @Get('refill-repair') async getRefillRepair() { return this.adminService.getRefillRepairRequests(); }
+
+    // Вкладка "Заявки на приёмку": GET /admin/receiving
+    @Get('receiving') async getReceiving() { return this.adminService.getReceivingRequests(); }
+
+    // Вкладка "Заявки на списание": GET /admin/scrap-requests
+    @Get('scrap-requests') async getScrapRequests() { return this.adminService.getScrapRequests(); }
+
+    // Вкладка "Заявки на получение": GET /admin/issuance
+    @Get('issuance') async getIssuance() { return this.adminService.getIssuanceRequests(); }
+
+    // Картриджи (модель + GUID) конкретной заявки: GET /admin/request/:id/cartridges
+    @Get('request/:id/cartridges')
+    async getRequestCartridges(@Param('id') id: string) {
+        return this.adminService.getCartridgesForRequest(parseInt(id, 10));
+    }
 
     @Post('create-user')
     async createEmployer(@Body() body: any) {
