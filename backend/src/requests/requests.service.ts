@@ -84,10 +84,10 @@ export class RequestsService {
         try {
             const currentDateTime = new Date().toISOString();
 
-            if (data.guid && data.guid !== "") {
-                // Существующий картридж
+            if (data.guid && data.guid.length > 0) {
+                // Существующий картридж (data.guid приходит массивом, даже если в нём один элемент)
                 const status = data.isDefective ? "Ожидает ремонта" : "Ожидает заправки";
-                const result = await this.cartridgesService.changeStatusesTo([data.guid], status);
+                const result = await this.cartridgesService.changeStatusesTo(data.guid, status);
 
                 if (result.success) {
                     const queryText = `
@@ -101,7 +101,7 @@ export class RequestsService {
           SELECT ir.id, c.id
           FROM inserted_request ir
           CROSS JOIN public.cartridges c
-          WHERE c.guid = $9;
+          WHERE c.guid = ANY($9::text[]);
         `;
 
                     await this.databaseService.query(queryText, [
@@ -168,14 +168,24 @@ export class RequestsService {
                 };
             }
             else if (data.guids && data.guids.length > 0) {
-                // Выдача существующих картриджей
-                const result = await this.cartridgesService.changeStatusesTo(data.guids, "Выдан");
+                // Целевой статус картриджа после заявки зависит от её типа:
+                // Получение — картридж выдан сотруднику, Заправка/ремонт — картридж снова готов к выдаче
+                const cartridgeTargetStatus = data.type === 'Заправка/ремонт' ? 'Готов к выдаче' : 'Выдан';
+                const result = await this.cartridgesService.changeStatusesTo(data.guids, cartridgeTargetStatus);
                 if (result.success) {
-                    // Создаём заявку
+                    // Создаём заявку и сразу привязываем к ней все переданные картриджи через requestslist
                     const queryText = `
-          INSERT INTO public.requests 
-            (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          WITH inserted_request AS (
+            INSERT INTO public.requests 
+              (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id
+          )
+          INSERT INTO public.requestslist (requestid, cartridgeid)
+          SELECT ir.id, c.id
+          FROM inserted_request ir
+          CROSS JOIN public.cartridges c
+          WHERE c.guid = ANY($9::text[]);
         `;
 
                     await this.databaseService.query(queryText, [
@@ -186,7 +196,8 @@ export class RequestsService {
                         data.employeeID,
                         currentDateTime,
                         data.employeeID,
-                        data.comment || ''
+                        data.comment || '',
+                        data.guids
                     ]);
 
                     return { success: true, cartridgesAmount: data.guids.length, GUIDs: [] };
