@@ -20,10 +20,6 @@ export default function DashboardPage() {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
     const [stats, setStats] = useState<any>(null);
-    // const [historyData, setHistoryData] = useState<any[]>([]);
-    // const [refillData, setRefillData] = useState<any[]>([]);
-    // const [repairData, setRepairData] = useState<any[]>([]);
-
     const [activeTableTab, setActiveTableTab] = useState(0);
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [refillRepairData, setRefillRepairData] = useState<any[]>([]);
@@ -62,7 +58,6 @@ export default function DashboardPage() {
                 },
             });
 
-            // Если бэкенд ответил ошибкой (например, 404 Номер не найден)
             if (!response.ok) {
                 return false;
             }
@@ -98,7 +93,7 @@ export default function DashboardPage() {
             <div className="mb-8 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold">Админ-панель</h1>
-                    {admin && <p className="text-gray-600">Добро пожаловать, {admin.fullname}</p>}
+                    {admin && <p className="text-gray-600">Добро пожаловать,<br />{admin.fullname}</p>}
                 </div>
                 <div className="flex gap-3">
                     <button onClick={() => setIsUserModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95">Новый пользователь</button>

@@ -87,23 +87,23 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-8 text-center">
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{h.totalfilled ?? 'ERR'}</div>
+                        <div className="text-4xl font-bold text-gray-900">{h.totalfilled ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Заправлено</div>
                     </div>
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{h.totalissued ?? 'ERR'}</div>
+                        <div className="text-4xl font-bold text-gray-900">{h.totalissued ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Выдано</div>
                     </div>
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{h.totalscrapped ?? 'ERR'}</div>
-                        <div className="text-sm text-gray-600 mt-1">Списано брак</div>
+                        <div className="text-4xl font-bold text-gray-900">{h.totalscrapped ?? 'ERR'}</div>
+                        <div className="text-sm text-gray-600 mt-1">Списано</div>
                     </div>
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{c.totalcartridges ?? 'ERR'}</div>
+                        <div className="text-4xl font-bold text-gray-900">{c.totalcartridges ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Всего картриджей</div>
                     </div>
                     <div>
-                        <div className="text-5xl font-bold text-gray-900">{c.idle ?? 'ERR'}</div>
+                        <div className="text-4xl font-bold text-gray-900">{c.idle ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Простаивающих</div>
                     </div>
                 </div>
