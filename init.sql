@@ -1,13 +1,4 @@
---
--- PostgreSQL database dump
---
-
 \restrict 2qyaYady0QkeyY9TqEH1l1vvr7ZbJhIjUTeDYtTXUmPlaQ2b5DQGuvfDUIe0YwI
-
--- Dumped from database version 18.4
--- Dumped by pg_dump version 18.4
-
--- Started on 2026-07-07 11:39:40
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -25,11 +16,6 @@ SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
---
--- TOC entry 220 (class 1259 OID 16486)
--- Name: cartridges; Type: TABLE; Schema: public; Owner: postgres
---
-
 CREATE TABLE public.cartridges (
     id integer NOT NULL,
     model character varying(50) NOT NULL,
@@ -40,13 +26,7 @@ CREATE TABLE public.cartridges (
     lastchangeby integer
 );
 
-
 ALTER TABLE public.cartridges OWNER TO postgres;
-
---
--- TOC entry 219 (class 1259 OID 16485)
--- Name: cartridges_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
 
 CREATE SEQUENCE public.cartridges_id_seq
     AS integer
@@ -56,22 +36,9 @@ CREATE SEQUENCE public.cartridges_id_seq
     NO MAXVALUE
     CACHE 1;
 
-
 ALTER SEQUENCE public.cartridges_id_seq OWNER TO postgres;
 
---
--- TOC entry 5058 (class 0 OID 0)
--- Dependencies: 219
--- Name: cartridges_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
 ALTER SEQUENCE public.cartridges_id_seq OWNED BY public.cartridges.id;
-
-
---
--- TOC entry 222 (class 1259 OID 16500)
--- Name: employers; Type: TABLE; Schema: public; Owner: postgres
---
 
 CREATE TABLE public.employers (
     id integer NOT NULL,
@@ -82,11 +49,6 @@ CREATE TABLE public.employers (
 );
 
 ALTER TABLE public.employers OWNER TO postgres;
-
---
--- TOC entry 221 (class 1259 OID 16499)
--- Name: employers_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
 
 CREATE SEQUENCE public.employers_id_seq
     AS integer
@@ -99,19 +61,7 @@ CREATE SEQUENCE public.employers_id_seq
 
 ALTER SEQUENCE public.employers_id_seq OWNER TO postgres;
 
---
--- TOC entry 5059 (class 0 OID 0)
--- Dependencies: 221
--- Name: employers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
 ALTER SEQUENCE public.employers_id_seq OWNED BY public.employers.id;
-
-
---
--- TOC entry 224 (class 1259 OID 16513)
--- Name: requests; Type: TABLE; Schema: public; Owner: postgres
---
 
 CREATE TABLE public.requests (
     id integer NOT NULL,
@@ -125,13 +75,7 @@ CREATE TABLE public.requests (
     comment character varying(255)
 );
 
-
 ALTER TABLE public.requests OWNER TO postgres;
-
---
--- TOC entry 223 (class 1259 OID 16512)
--- Name: requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
 
 CREATE SEQUENCE public.requests_id_seq
     AS integer
@@ -141,22 +85,9 @@ CREATE SEQUENCE public.requests_id_seq
     NO MAXVALUE
     CACHE 1;
 
-
 ALTER SEQUENCE public.requests_id_seq OWNER TO postgres;
 
---
--- TOC entry 5060 (class 0 OID 0)
--- Dependencies: 223
--- Name: requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
 ALTER SEQUENCE public.requests_id_seq OWNED BY public.requests.id;
-
-
---
--- TOC entry 226 (class 1259 OID 16534)
--- Name: requestslist; Type: TABLE; Schema: public; Owner: postgres
---
 
 CREATE TABLE public.requestslist (
     id integer NOT NULL,
@@ -164,13 +95,7 @@ CREATE TABLE public.requestslist (
     cartridgeid integer NOT NULL
 );
 
-
 ALTER TABLE public.requestslist OWNER TO postgres;
-
---
--- TOC entry 225 (class 1259 OID 16533)
--- Name: requestslist_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
 
 CREATE SEQUENCE public.requestslist_id_seq
     AS integer
@@ -183,46 +108,15 @@ CREATE SEQUENCE public.requestslist_id_seq
 
 ALTER SEQUENCE public.requestslist_id_seq OWNER TO postgres;
 
---
--- TOC entry 5061 (class 0 OID 0)
--- Dependencies: 225
--- Name: requestslist_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
 ALTER SEQUENCE public.requestslist_id_seq OWNED BY public.requestslist.id;
-
-
---
--- TOC entry 4871 (class 2604 OID 16489)
--- Name: cartridges id; Type: DEFAULT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.cartridges ALTER COLUMN id SET DEFAULT nextval('public.cartridges_id_seq'::regclass);
 
-
---
--- TOC entry 4874 (class 2604 OID 16503)
--- Name: employers id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.employers ALTER COLUMN id SET DEFAULT nextval('public.employers_id_seq'::regclass);
-
-
---
--- TOC entry 4876 (class 2604 OID 16516)
--- Name: requests id; Type: DEFAULT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.requests ALTER COLUMN id SET DEFAULT nextval('public.requests_id_seq'::regclass);
 
-
---
--- TOC entry 4879 (class 2604 OID 16537)
--- Name: requestslist id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.requestslist ALTER COLUMN id SET DEFAULT nextval('public.requestslist_id_seq'::regclass);
-
 
 CREATE TABLE public.dashboard_settings (
     id integer PRIMARY KEY DEFAULT 1,
@@ -233,207 +127,50 @@ CREATE TABLE public.dashboard_settings (
 -- Вставляем дефолтную строчку со скриншота при создании базы
 INSERT INTO public.dashboard_settings (id, refillThreshold) VALUES (1, 10) ON CONFLICT DO NOTHING;
 
-
---
--- TOC entry 5046 (class 0 OID 16486)
--- Dependencies: 220
--- Data for Name: cartridges; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.cartridges (id, model, guid, status, isdefective, lastchangedata, lastchangeby) FROM stdin;
-1	HP LaserJet 12A	550e8400-e29b-41d4-a716-446655440000	Ожидает заправки	f	2026-07-05 10:07:57.24339	\N
-2	Canon 725	550e8400-e29b-41d4-a716-446655440001	Готов к выдаче	f	2026-07-05 10:07:57.24339	\N
-3	Samsung MLT-D101S	550e8400-e29b-41d4-a716-446655440002	Выдан	t	2026-07-05 10:07:57.24339	\N
-4	Brother TN-1075	550e8400-e29b-41d4-a716-446655440003	Ожидает ремонта	t	2026-07-05 10:07:57.24339	\N
-5	Xerox 3020	550e8400-e29b-41d4-a716-446655440004	Списан	t	2026-07-05 10:07:57.24339	\N
-\.
-
-
---
--- TOC entry 5048 (class 0 OID 16500)
--- Dependencies: 222
--- Data for Name: employers; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
 COPY public.employers (id, phone, fullname, role, password) FROM stdin;
 1	+79991112233	Иванов Иван Иванович	Admin	$2b$10$vn6tNBc5qvNrYMJtxCkEe.i0H6vv79gVmZO58U3Zo73gNh2pI3vFi
-2	+79992223344	Петров Петр Петрович	User	\N
-3	+79993334455	Сидоров Сидор Сидорович	User	\N
-4	+79994445566	Алексеев Алексей Алексеевич	User	\N
-5	+79995556677	Николаев Николай Николаевич	User	\N
 \.
-
-
---
--- TOC entry 5050 (class 0 OID 16513)
--- Dependencies: 224
--- Data for Name: requests; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.requests (id, type, isDefective, status, data, employee, lastchangedata, lastchangeby, comment) FROM stdin;
-1	Получение	\N	Создана	2026-07-05 10:07:57.24339	2	2026-07-05 10:07:57.24339	2	Выдан картридж для бухгалтерии
-2	Приёмка	false	Создана	2026-07-05 10:07:57.24339	3	2026-07-05 10:07:57.24339	3	Сдали пустой картридж из кадров
-3	Приёмка	true	Завершена	2026-07-05 10:07:57.24339	1	2026-07-05 10:07:57.24339	1	Сильный треск при печати
-4	Получение	\N	Создана	2026-07-05 10:07:57.24339	4	2026-07-05 10:07:57.24339	4	Заявка на картридж в архив
-5	Приёмка	false	Завершена	2026-07-05 10:07:57.24339	5	2026-07-05 10:07:57.24339	5	Плановая замена картриджа
-\.
-
-
---
--- TOC entry 5052 (class 0 OID 16534)
--- Dependencies: 226
--- Data for Name: requestslist; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.requestslist (id, requestid, cartridgeid) FROM stdin;
-1	1	2
-2	2	1
-3	3	3
-4	4	4
-5	5	5
-\.
-
-
---
--- TOC entry 5062 (class 0 OID 0)
--- Dependencies: 219
--- Name: cartridges_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
 
 SELECT pg_catalog.setval('public.cartridges_id_seq', 5, true);
 
-
---
--- TOC entry 5063 (class 0 OID 0)
--- Dependencies: 221
--- Name: employers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
 SELECT pg_catalog.setval('public.employers_id_seq', 5, true);
-
-
---
--- TOC entry 5064 (class 0 OID 0)
--- Dependencies: 223
--- Name: requests_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
 
 SELECT pg_catalog.setval('public.requests_id_seq', 5, true);
 
-
---
--- TOC entry 5065 (class 0 OID 0)
--- Dependencies: 225
--- Name: requestslist_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
 SELECT pg_catalog.setval('public.requestslist_id_seq', 5, true);
-
-
---
--- TOC entry 4881 (class 2606 OID 16498)
--- Name: cartridges cartridges_guid_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.cartridges
     ADD CONSTRAINT cartridges_guid_key UNIQUE (guid);
 
-
---
--- TOC entry 4883 (class 2606 OID 16496)
--- Name: cartridges cartridges_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.cartridges
     ADD CONSTRAINT cartridges_pkey PRIMARY KEY (id);
-
-
---
--- TOC entry 4885 (class 2606 OID 16511)
--- Name: employers employers_phone_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.employers
     ADD CONSTRAINT employers_phone_key UNIQUE (phone);
 
-
---
--- TOC entry 4887 (class 2606 OID 16509)
--- Name: employers employers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.employers
     ADD CONSTRAINT employers_pkey PRIMARY KEY (id);
-
-
---
--- TOC entry 4889 (class 2606 OID 16522)
--- Name: requests requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.requests
     ADD CONSTRAINT requests_pkey PRIMARY KEY (id);
 
-
---
--- TOC entry 4891 (class 2606 OID 16542)
--- Name: requestslist requestslist_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.requestslist
     ADD CONSTRAINT requestslist_pkey PRIMARY KEY (id);
-
-
---
--- TOC entry 4893 (class 2606 OID 16554)
--- Name: requestslist unique_request_cartridge; Type: CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.requestslist
     ADD CONSTRAINT unique_request_cartridge UNIQUE (requestid, cartridgeid);
 
-
---
--- TOC entry 4894 (class 2606 OID 16523)
--- Name: requests requests_employee_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.requests
     ADD CONSTRAINT requests_employee_fkey FOREIGN KEY (employee) REFERENCES public.employers(id);
-
-
---
--- TOC entry 4895 (class 2606 OID 16528)
--- Name: requests requests_lastchangeby_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.requests
     ADD CONSTRAINT requests_lastchangeby_fkey FOREIGN KEY (lastchangeby) REFERENCES public.employers(id);
 
-
---
--- TOC entry 4896 (class 2606 OID 16548)
--- Name: requestslist requestslist_cartridgeid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.requestslist
     ADD CONSTRAINT requestslist_cartridgeid_fkey FOREIGN KEY (cartridgeid) REFERENCES public.cartridges(id);
 
-
---
--- TOC entry 4897 (class 2606 OID 16543)
--- Name: requestslist requestslist_requestid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.requestslist
     ADD CONSTRAINT requestslist_requestid_fkey FOREIGN KEY (requestid) REFERENCES public.requests(id) ON DELETE CASCADE;
-
-
--- Completed on 2026-07-07 11:39:40
-
---
--- PostgreSQL database dump complete
---
 
 \unrestrict 2qyaYady0QkeyY9TqEH1l1vvr7ZbJhIjUTeDYtTXUmPlaQ2b5DQGuvfDUIe0YwI
 
