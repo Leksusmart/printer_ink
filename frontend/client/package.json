@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "start": "next start"
+    "start": "npx serve@latest out -l %PORT_FRONTEND_CLIENT%"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

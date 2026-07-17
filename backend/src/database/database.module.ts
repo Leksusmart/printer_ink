@@ -11,12 +11,11 @@ import { DatabaseService } from './database.service';
             provide: 'DATABASE_POOL',
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => {
-                const USER = configService.get<string>('DB_USERNAME');
                 return new Pool({
-                    host: USER,
+                    host: configService.get<string>('DB_HOST'),
                     port: Number(configService.get<number>('DB_PORT')),
                     database: configService.get<string>('DB_DATABASE'),
-                    user: USER,
+                    user: configService.get<string>('DB_USERNAME'),
                     password: configService.get<string>('DB_PASSWORD'),
                 });
             },
