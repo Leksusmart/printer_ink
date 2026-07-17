@@ -18,7 +18,7 @@ export default function AdminLoginPage() {
 
         try {
             // Отправляем POST запрос на эндпоинт авторизации админа
-            const response = await fetch('http://localhost:3000/Employers/admin-login', {
+            const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/admin-login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

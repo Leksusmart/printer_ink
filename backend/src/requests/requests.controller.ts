@@ -1,5 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Controller, Get, Post, Body, Query, NotFoundException, BadRequestException } from '@nestjs/common';
 import { RequestsService } from '../requests/requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';

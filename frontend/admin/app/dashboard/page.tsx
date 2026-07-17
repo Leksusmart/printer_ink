@@ -51,7 +51,7 @@ export default function DashboardPage() {
     };
     const checkSession = async (userPhone: string): Promise<boolean> => {
         try {
-            const response = await fetch(`http://localhost:3000/Employers/search?phone=${userPhone}`, {
+            const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/Employers/search?phone=${userPhone}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

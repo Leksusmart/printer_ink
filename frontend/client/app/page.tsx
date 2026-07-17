@@ -20,9 +20,9 @@ export default function LoginPage() {
         setIsLoading(true); // Включаем режим загрузки
 
         try {
-            // 4. Делаем запрос к контроллеру бэкенда (localhost:3000)
+            // 4. Делаем запрос к контроллеру бэкенда
             // Мы передаем введенный телефон в параметры строки (?phone=...)
-            const response = await fetch(`http://localhost:3000/Employers/search?phone=${encodeURIComponent(phone)}`, {
+            const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/Employers/search?phone=${encodeURIComponent(phone)}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

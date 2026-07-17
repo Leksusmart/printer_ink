@@ -1,10 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable prettier/prettier */
-
-import { Injectable, Inject, forwardRef, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { RequestsService } from '../requests/requests.service';
 import { CartridgesService } from '../cartridges/cartridges.service';
 import * as bcrypt from 'bcrypt';
 import { normalizePhone } from '../utils/phone.helper';
@@ -13,9 +8,7 @@ import { normalizePhone } from '../utils/phone.helper';
 export class AdminService {
     constructor(
         private readonly databaseService: DatabaseService,
-        private readonly cartridgesService: CartridgesService,
-        @Inject(forwardRef(() => RequestsService))
-        private readonly requestsService: RequestsService
+        private readonly cartridgesService: CartridgesService
     ) { }
 
     async scrapCartridgeByGuid(guid: string) {
@@ -137,7 +130,7 @@ export class AdminService {
         return result.rows;
     }
 
-    // Список картриджей (модель + GUID) для конкретной заявки — для окна "Подробнее"
+    // Список картриджей (модель + GUID) для конкретной заявки — для кнопки "Подробнее"
     async getCartridgesForRequest(requestId: number) {
         const query = `
             SELECT c.model, c.guid
@@ -189,7 +182,7 @@ export class AdminService {
     }
 
     async getNewGUID(): Promise<string> {
-        const result = await this.requestsService.generateGUID();
+        const result = await this.databaseService.generateGUID();
         return result.guid;
     }
 

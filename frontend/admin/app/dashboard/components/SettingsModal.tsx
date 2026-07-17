@@ -19,7 +19,7 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
 
     const loadSettings = async () => {
         try {
-            const res = await fetch('http://localhost:3000/admin/settings');
+            const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/admin-login`);
             if (res.ok) {
                 const data = await res.json();
                 setrefillthreshold(data.refillthreshold ?? 10);
@@ -35,7 +35,7 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
         setMessage('');
 
         try {
-            const res = await fetch('http://localhost:3000/admin/settings', {
+            const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/settings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

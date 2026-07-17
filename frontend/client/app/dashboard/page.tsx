@@ -50,7 +50,7 @@ function DashboardContent() {
                 if (!userPhone) throw new Error('Телефон не указан');
 
                 // === ИЗМЕНЕНИЕ: POST вместо GET ===
-                const employerResponse = await fetch('http://localhost:3000/Employers/admin-login', {
+                const employerResponse = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/admin-login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: userPhone })
@@ -61,10 +61,10 @@ function DashboardContent() {
                 setCurrentUser(employerData);
 
                 // Загрузка моделей
-                const cartridgesResponse = await fetch('http://localhost:3000/cartridges');
+                const cartridgesResponse = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/cartridges`);
                 if (cartridgesResponse.ok) {
                     const data = await cartridgesResponse.json();
-                    const models = [...new Set(data.map((c: any) => c.model))];
+                    const models = [...new Set<string>(data.map((c: any) => c.model))];
                     setAvailableModels(models);
                 }
             } catch (err) {
@@ -147,7 +147,7 @@ function DashboardContent() {
         if (!guidValue) return;
 
         try {
-            const response = await fetch(`http://localhost:3000/cartridges/search?guid=${encodeURIComponent(guidValue)}`);
+            const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/cartridges/search?guid=${encodeURIComponent(guidValue)}`);
             if (!response.ok) {
                 setCartridges((prev) => {
                     const updated = [...prev];
@@ -296,7 +296,7 @@ function DashboardContent() {
 
                 console.log(`Отправляем в базу картридж:`, requestData);
 
-                const response = await fetch('http://localhost:3000/requests', {
+                const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/requests`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestData)

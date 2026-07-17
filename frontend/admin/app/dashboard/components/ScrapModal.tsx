@@ -19,7 +19,7 @@ export default function ScrapModal({ isOpen, onClose, onSuccess }: ScrapModalPro
     setMessage('');
 
     try {
-      const res = await fetch('http://localhost:3000/admin/scrap-cartridge', {
+        const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/scrap-cartridge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guid })

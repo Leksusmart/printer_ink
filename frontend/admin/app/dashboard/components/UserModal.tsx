@@ -22,7 +22,7 @@ export default function UserModal({ isOpen, onClose, onSuccess }: UserModalProps
     setMessage('');
 
     try {
-      const res = await fetch('http://localhost:3000/admin/create-user', {
+        const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/create-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fullname, phone, role, password })

@@ -3,12 +3,14 @@ services:
     image: postgres:17-alpine
     container_name: ink_postgres
     restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1357
-      POSTGRES_DB: printer_ink
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
     ports:
-      - "5432:5432"
+      - "${DB_PORT}:${DB_PORT}"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -18,13 +20,14 @@ services:
     container_name: ink_backend
     restart: always
     ports:
-      - "3000:3000"
+      - "${PORT_BACKEND}:${PORT_BACKEND}"
+    env_file:
+      - .env
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=printer_ink
-      - DB_USER=postgres
-      - DB_PASSWORD=1357
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - postgres
 
@@ -32,12 +35,15 @@ services:
     build:
       context: ./frontend/client
       dockerfile: client.Dockerfile
+      args:
+        - CLIENT_URL=${CLIENT_URL}
+        - PORT_BACKEND=${PORT_BACKEND}
     container_name: ink_frontend_client
     restart: always
     ports:
-      - "3001:3001"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - "${PORT_FRONTEND_CLIENT}:3000"
+    env_file:
+      - .env
     depends_on:
       - backend
 
@@ -45,12 +51,15 @@ services:
     build:
       context: ./frontend/admin
       dockerfile: admin.Dockerfile
+      args:
+        - CLIENT_URL=${CLIENT_URL}
+        - PORT_BACKEND=${PORT_BACKEND}
     container_name: ink_frontend_admin
     restart: always
     ports:
-      - "3002:3002" # Админка будет доступна в браузере по адресу localhost:3002
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - "${PORT_FRONTEND_ADMIN}:3000"
+    env_file:
+      - .env
     depends_on:
       - backend
 

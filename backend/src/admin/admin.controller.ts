@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable prettier/prettier */
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
@@ -9,7 +5,7 @@ import { AdminService } from './admin.service';
 export class AdminController {
     constructor(private readonly adminService: AdminService) { }
 
-    // Эндпоинт для верхних карточек и блоков статистики: GET /admin/stats
+    // Эндпоинт для верхних карточек и блоков статистики
     @Get('stats')
     async getStats() {
         return this.adminService.getStats();
@@ -17,19 +13,19 @@ export class AdminController {
 
     @Get('history') async getHistory() { return this.adminService.getHistoryLogs(); }
 
-    // Объединённая вкладка "Заявки на заправку/ремонт": GET /admin/refill-repair
+    // Объединённая вкладка "Заявки на заправку/ремонт"
     @Get('refill-repair') async getRefillRepair() { return this.adminService.getRefillRepairRequests(); }
 
-    // Вкладка "Заявки на приёмку": GET /admin/receiving
+    // Вкладка "Заявки на приёмку"
     @Get('receiving') async getReceiving() { return this.adminService.getReceivingRequests(); }
 
-    // Вкладка "Заявки на списание": GET /admin/scrap-requests
+    // Вкладка "Заявки на списание"
     @Get('scrap-requests') async getScrapRequests() { return this.adminService.getScrapRequests(); }
 
-    // Вкладка "Заявки на получение": GET /admin/issuance
+    // Вкладка "Заявки на получение"
     @Get('issuance') async getIssuance() { return this.adminService.getIssuanceRequests(); }
 
-    // Картриджи (модель + GUID) конкретной заявки: GET /admin/request/:id/cartridges
+    // Картриджи (модель + GUID) конкретной заявки
     @Get('request/:id/cartridges')
     async getRequestCartridges(@Param('id') id: string) {
         return this.adminService.getCartridgesForRequest(parseInt(id, 10));
@@ -55,13 +51,11 @@ export class AdminController {
         return this.adminService.scrapCartridgeByGuid(body.guid);
     }
 
-    // GET-роут для чтения: http://localhost:3000/admin/settings
     @Get('settings')
     async getSettings() {
         return this.adminService.getSettings();
     }
 
-    // POST-роут для сохранения: http://localhost:3000/admin/settings
     @Post('settings')
     async updateSettings(@Body() body: any) {
         return this.adminService.updateSettings(body);

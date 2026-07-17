@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3000/admin';
+const API_BASE = `${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin`;
 
 export const adminApi = {
     async getStats() {

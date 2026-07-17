@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
 interface CartridgeModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -27,7 +26,7 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
     const generateNewGuid = async () => {
         setGenerating(true);
         try {
-            const res = await fetch('http://localhost:3000/admin/generate-guid');
+            const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/generate-guid`);
             const data = await res.json();
             setGuid(data.guid);
         } catch (err) {
@@ -50,7 +49,7 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
             const session = sessionStr ? JSON.parse(sessionStr) : null;
             const adminId = session?.id || null;
 
-            const res = await fetch('http://localhost:3000/admin/create-cartridge', {
+            const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/create-cartridge`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

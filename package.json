@@ -1,19 +1,19 @@
 {
   "name": "printer_ink",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Приложение по учёту картриджей",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently \"cd backend && npm run start:dev\" \"cd frontend/client && npm run dev\" \"cd frontend/admin && npm run dev\"",
-    "init-all": "npm install && cd backend && npm install && cd ../frontend/client && npm install && cd ../admin && npm install",
+    "start": "concurrently \"cd backend && npm run start\" \"cd frontend/client && npm run start\" \"cd frontend/admin && npm run start\"",
+    "init-all": "npm install && cd backend && npm install && cd ../frontend/client && npm build && npm install && cd ../admin && npm build && npm install",
     "init-APK": "cd frontend/client && npm install @capacitor/core @capacitor/cli && npx cap init \"Printer Ink\" \"com.myproject.app\" --web-dir=out && npm install @capacitor/android && npx cap add android",
     "updateAPK": "cd frontend/client && npm run build && npx cap sync",
     "createAPK": "cd frontend/client && npx cap open android"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "author": "Leksusmart, Pregnantman",
+  "license": "UNLICENSED",
+  "type": "nestjsnextjs",
   "devDependencies": {
     "concurrently": "^10.0.3"
   }

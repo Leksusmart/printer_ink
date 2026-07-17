@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+
 interface DashboardStatsProps {
     stats: any;
 }
@@ -11,7 +12,7 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
     useEffect(() => {
         const loadThreshold = async () => {
             try {
-                const res = await fetch('http://localhost:3000/admin/settings');
+                const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/settings`);
                 if (res.ok) {
                     const data = await res.json();
                     setThreshold(data.refillthreshold);
