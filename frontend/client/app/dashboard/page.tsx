@@ -21,7 +21,17 @@ interface Employer {
     role: string;
 }
 
-const emptyRowForType = (_type: 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ'): CartridgeItem => ({
+// Тип операции — это не "выбор", а тип заявки, который отправляется на бэкенд (см. baseData.type в handleSubmit)
+type OperationType = 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ' | 'ЗАПРАВКА_РЕМОНТ';
+
+// Человекочитаемое значение поля type, которое уходит в заявку на бэкенд
+const OPERATION_TYPE_LABEL: Record<OperationType, string> = {
+    ПРИЕМКА: 'Приёмка',
+    ПОЛУЧЕНИЕ: 'Получение',
+    ЗАПРАВКА_РЕМОНТ: 'Заправка/ремонт',
+};
+
+const emptyRowForType = (_type: OperationType): CartridgeItem => ({
     mode: 'guid', guid: '', model: '', status: '', count: '', isDefective: false, isResolved: false, lookupError: ''
 });
 
@@ -33,11 +43,18 @@ function DashboardContent() {
     const [currentUser, setCurrentUser] = useState<Employer | null>(null);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
 
-    const [operationType, setOperationType] = useState<'ПРИЕМКА' | 'ПОЛУЧЕНИЕ'>('ПРИЕМКА');
+    const [operationType, setOperationType] = useState<OperationType>('ПРИЕМКА');
     const [cartridges, setCartridges] = useState<CartridgeItem[]>([emptyRowForType('ПРИЕМКА')]);
     const [comment, setComment] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    // Всплывающее предупреждение по центру экрана (например, дубликат GUID), само исчезает через 2 сек
+    const [toastMessage, setToastMessage] = useState('');
+
+    const showToast = (message: string) => {
+        setToastMessage(message);
+        setTimeout(() => setToastMessage(''), 2000);
+    };
 
     const isFormValid = cartridges.every((item) =>
         item.mode === 'guid' ? item.isResolved : item.model.trim() !== ''
@@ -93,7 +110,7 @@ function DashboardContent() {
     };
 
     // Меняет тип операции и сбрасывает список картриджей на пустую строку
-    const handleOperationTypeChange = (type: 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ') => {
+    const handleOperationTypeChange = (type: OperationType) => {
         setOperationType(type);
         setCartridges([emptyRowForType(type)]);
     };
@@ -190,6 +207,46 @@ function DashboardContent() {
                 });
                 return;
             }
+            // Заправка/ремонт — принять можно только картридж со статусом "Ожидает заправки" или "Ожидает ремонта"
+            const ЗАПРАВКА_РЕМОНТ_СТАТУСЫ = ['Ожидает заправки', 'Ожидает ремонта'];
+            if (operationType === 'ЗАПРАВКА_РЕМОНТ' && !ЗАПРАВКА_РЕМОНТ_СТАТУСЫ.includes(data.status)) {
+                setCartridges((prev) => {
+                    const updated = [...prev];
+                    updated[index] = {
+                        ...updated[index],
+                        guid: guidValue,
+                        model: data.model,
+                        status: data.status,
+                        isResolved: false,
+                        lookupError: `На заправку/ремонт можно принять только картриджи со статусом "Ожидает заправки" или "Ожидает ремонта" (текущий статус: ${data.status})`,
+                    };
+                    return updated;
+                });
+                return;
+            }
+            // Защита от дубликатов: нельзя добавить один и тот же картридж в заявку дважды.
+            // Строку с повторным GUID просто очищаем и показываем предупреждение по центру экрана.
+            const isDuplicateInRequest = cartridges.some(
+                (c, i) => i !== index && c.mode === 'guid' && c.isResolved && c.guid === guidValue
+            );
+
+            if (isDuplicateInRequest) {
+                setCartridges((prev) => {
+                    const updated = [...prev];
+                    updated[index] = {
+                        ...updated[index],
+                        guid: '',
+                        model: '',
+                        status: '',
+                        isResolved: false,
+                        lookupError: '',
+                    };
+                    return updated;
+                });
+                showToast('Этот картридж уже добавлен в заявку');
+                return;
+            }
+
             setCartridges((prev) => {
                 const updated = [...prev];
                 updated[index] = {
@@ -221,6 +278,18 @@ function DashboardContent() {
             return;
         }
 
+        // Дополнительная (подстраховочная) проверка на дубликаты — в норме до сюда дублирующийся
+        // GUID дойти не должен, так как lookupCartridgeByGuid уже не даёт его разрешить
+        const resolvedGuids = cartridges
+            .filter((item) => item.mode === 'guid' && item.isResolved)
+            .map((item) => item.guid);
+
+        const hasDuplicates = new Set(resolvedGuids).size !== resolvedGuids.length;
+        if (hasDuplicates) {
+            showToast('В заявке указан один и тот же картридж дважды');
+            return;
+        }
+
         let allGeneratedGuids: string[] = [];
         let successfulCount = 0;
 
@@ -236,7 +305,7 @@ function DashboardContent() {
 
                 // Базовые поля, общие для обоих режимов
                 const baseData = {
-                    type: operationType === 'ПРИЕМКА' ? 'Приёмка' : 'Получение',
+                    type: OPERATION_TYPE_LABEL[operationType],
                     isDefective: false,
                     status: 'Создана',
                     data: currentDateTime,
@@ -283,7 +352,7 @@ function DashboardContent() {
                             guids: [],
                         };
                     }
-                } else { // Получение
+                } else { // Получение и Заправка/ремонт — параметры заявки идентичны, отличается только type
                     requestData = {
                         ...baseData,
                         isDefective: false,
@@ -363,6 +432,14 @@ function DashboardContent() {
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans">
+            {toastMessage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                    <div className="rounded bg-gray-900/90 px-5 py-3 text-sm font-medium text-white shadow-lg">
+                        {toastMessage}
+                    </div>
+                </div>
+            )}
+
             <div className="w-full max-w-xl space-y-4 rounded border border-blue-400 bg-white p-6 shadow-sm">
 
                 <div className="space-y-2">
@@ -398,6 +475,13 @@ function DashboardContent() {
                         className={`flex-1 py-2 text-xs font-bold tracking-wider transition-colors ${operationType === 'ПОЛУЧЕНИЕ' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}
                     >
                         ПОЛУЧЕНИЕ
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleOperationTypeChange('ЗАПРАВКА_РЕМОНТ')}
+                        className={`flex-1 py-2 text-xs font-bold tracking-wider transition-colors ${operationType === 'ЗАПРАВКА_РЕМОНТ' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}
+                    >
+                        ЗАПРАВКА/РЕМОНТ
                     </button>
                 </div>
 

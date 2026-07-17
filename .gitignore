@@ -1,6 +1,7 @@
 /.vs/
 /node_modules/
 frontend/.next/
+frontend/node_modules/
 frontend/client/node_modules/
 frontend/admin/node_modules/
 /backend/node_modules/
