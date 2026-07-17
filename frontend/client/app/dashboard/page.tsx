@@ -485,7 +485,7 @@ function DashboardContent() {
 
             <div className="w-full max-w-xl space-y-4 rounded border border-blue-400 bg-white p-6 shadow-sm">
 
-                <div className="space-y-2">
+                <div className="flex items-center justify-between w-full mb-4">
                     <button
                         type="button"
                         onClick={() => router.push('/')}
@@ -494,8 +494,15 @@ function DashboardContent() {
                         ← Выйти из системы
                     </button>
 
-                    <h1 className="text-xl font-normal text-gray-800">Заявка на картриджи</h1>
-                    <p className="mt-1 text-sm text-gray-400">Отсканируйте QR-код или введите GUID</p>
+                    {cartridges.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => router.push(`/dashboard/pages/cartridgesQR?phone=${encodeURIComponent(userPhone)}`)}
+                            className="text-xs text-gray-400 hover:text-red-500 font-medium tracking-wide uppercase transition-colors duration-200 flex items-center gap-1"
+                        >
+                            Посмотреть созданные QR →
+                        </button>
+                    )}
                 </div>
 
                 <div className="relative">
