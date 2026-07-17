@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 // Один созданный картридж, для которого нужно показать QR-код
 interface GeneratedCartridge {
@@ -18,8 +18,6 @@ const qrImageUrl = (data: string) =>
 
 function PrintContent() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const userPhone = searchParams.get('phone') || '';
 
     const [cartridges, setCartridges] = useState<GeneratedCartridge[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -42,10 +40,6 @@ function PrintContent() {
         console.log(`Отправка на печать (пока не реализовано): ${guid}`);
     };
 
-    const goBackToDashboard = () => {
-        router.push(`/dashboard?phone=${encodeURIComponent(userPhone)}`);
-    };
-
     if (isLoading) {
         return <div className="flex min-h-screen items-center justify-center text-gray-500">Загрузка...</div>;
     }
@@ -57,7 +51,7 @@ function PrintContent() {
                 <div className="space-y-2">
                     <button
                         type="button"
-                        onClick={goBackToDashboard}
+                        onClick={() => router.push('/dashboard')}
                         className="text-xs text-gray-400 hover:text-blue-500 font-medium tracking-wide uppercase transition-colors duration-200 flex items-center gap-1"
                     >
                         ← Вернуться к заявкам

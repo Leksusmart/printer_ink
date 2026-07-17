@@ -447,7 +447,7 @@ function DashboardContent() {
             if (manuallyCreatedCartridges.length > 0) {
                 sessionStorage.removeItem('generatedCartridges');
                 sessionStorage.setItem('generatedCartridges', JSON.stringify(manuallyCreatedCartridges));
-                router.push(`/dashboard/pages/cartridgesQR?phone=${encodeURIComponent(userPhone)}`);
+                router.push(`/dashboard/pages/cartridgesQR`);
             } else {
                 alert('Принято!');
             }
@@ -497,7 +497,7 @@ function DashboardContent() {
                     {cartridges.length > 0 && (
                         <button
                             type="button"
-                            onClick={() => router.push(`/dashboard/pages/cartridgesQR?phone=${encodeURIComponent(userPhone)}`)}
+                            onClick={() => router.push('/dashboard/pages/cartridgesQR')}
                             className="text-xs text-gray-400 hover:text-red-500 font-medium tracking-wide uppercase transition-colors duration-200 flex items-center gap-1"
                         >
                             Посмотреть созданные QR →
