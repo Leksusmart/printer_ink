@@ -30,7 +30,7 @@ export class AdminService {
       ),
       history AS (
         SELECT 
-          COUNT(CASE WHEN type = 'Заправка и ремонт' THEN 1 END) as totalfilled,
+          COUNT(CASE WHEN type = 'Заправка/ремонт' THEN 1 END) as totalfilled,
           COUNT(CASE WHEN type = 'Получение' THEN 1 END) as totalissued,
           COUNT(CASE WHEN status = 'Списан' AND type = 'Списание' THEN 1 END) as totalscrapped
         FROM public.requests
@@ -93,7 +93,7 @@ export class AdminService {
     // Объединённые заявки на заправку и ремонт (одна вкладка на фронте)
     async getRefillRepairRequests() {
         const filter = `
-            WHERE r.type IN ('Ожидает заправки', 'Ожидает ремонта')
+            WHERE r.type = 'Заправка/ремонт'
         `;
         const query = this.getBaseRequestQuery(filter);
         const result = await this.databaseService.query(query);

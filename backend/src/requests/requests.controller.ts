@@ -13,8 +13,7 @@ export class RequestsController {
 
     @Post()
     async create(@Body() createRequestDto: CreateRequestDto) {
-        const result = await this.requestsService.createRequest(createRequestDto);
-        return result;
+        return await this.requestsService.createRequest(createRequestDto);
     }
 
     @Get('search')

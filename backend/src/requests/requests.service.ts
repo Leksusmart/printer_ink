@@ -48,132 +48,102 @@ export class RequestsService {
 
     async createRequest(data: any): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
-            const currentDateTime = new Date().toISOString();
+            const moscowDateTime = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+            const [datePart, timePart] = moscowDateTime.split(', ');
+            const [day, month, year] = datePart.split('.');
+            const currentDateTime = `${year}-${month}-${day} ${timePart}`;
 
-            if (data.guid && data.guid.length > 0) {
-                // Существующий картридж (data.guid приходит массивом, даже если в нём один элемент)
-                const status = data.isDefective ? "Ожидает ремонта" : "Ожидает заправки";
-                const result = await this.cartridgesService.changeStatusesTo(data.guid, status);
+            const requestType = data.type; // 'Приёмка', 'Заправка/ремонт', 'Получение'
+            const employeeId = data.EmployeeID;
+            const comment = data.comment || '';
+            const isRequestDefective = !!data.isDefective;
 
-                if (result.success) {
-                    const queryText = `
-          WITH inserted_request AS (
-            INSERT INTO public.requests 
-              (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id
-          )
-          INSERT INTO public.requestslist (requestid, cartridgeid)
-          SELECT ir.id, c.id
-          FROM inserted_request ir
-          CROSS JOIN public.cartridges c
-          WHERE c.guid = ANY($9::text[]);
-        `;
-
-                    await this.databaseService.query(queryText, [
-                        data.type,
-                        data.isDefective,
-                        data.status,
-                        currentDateTime,
-                        data.employeeID,
-                        currentDateTime,
-                        data.employeeID,
-                        data.comment || '',
-                        data.guid
-                    ]);
-
-                    return { success: true, cartridgesAmount: 1, GUIDs: [] };
-                }
+            // Определяем статусы
+            let cartridgeTargetStatus = '';
+            if (requestType === 'Приёмка') {
+                cartridgeTargetStatus = isRequestDefective ? 'Ожидает ремонта' : 'Ожидает заправки';
+            } else if (requestType === 'Заправка/ремонт') {
+                cartridgeTargetStatus = 'Готов к выдаче';
+            } else if (requestType === 'Получение') {
+                cartridgeTargetStatus = 'Выдан';
             }
-            else if (data.model && data.amount > 0) {
-                // Новые картриджи
-                const guidPromises = Array.from({ length: data.amount }, () => this.databaseService.generateGUID());
+
+            const existingGuids = data.guids || [];
+            const newCartridgesList = data.newCartridges || []; // [{ model: 'HP', amount: 2 }]
+
+            // Массив, в который мы соберем ВСЕ сгенерированные GUID для этой заявки
+            let allGeneratedGuids: string[] = [];
+
+            // 1. Создаем саму заявку в БД
+            const insertRequestQuery = `
+            INSERT INTO public.requests 
+                (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id;
+        `;
+            const requestResult = await this.databaseService.query(insertRequestQuery, [
+                requestType, isRequestDefective, 'Создана', currentDateTime, employeeId, currentDateTime, employeeId, comment
+            ]) as any;
+
+            const requestId = requestResult.rows[0].id;
+
+            // 2. Если есть СУЩЕСТВУЮЩИЕ картриджи — обновляем их статус и привязываем к заявке
+            if (existingGuids.length > 0) {
+                await this.cartridgesService.changeStatusesTo(existingGuids, cartridgeTargetStatus);
+
+                const linkExistingQuery = `
+                INSERT INTO public.requestslist (requestid, cartridgeid)
+                SELECT $1, c.id
+                FROM public.cartridges c
+                WHERE c.guid = ANY($2::text[]);
+            `;
+                await this.databaseService.query(linkExistingQuery, [requestId, existingGuids]);
+            }
+
+            // 3. Если есть НОВЫЕ картриджи (из ручного ввода) — создаем их и привязываем к этой же заявке
+            for (const newCartridge of newCartridgesList) {
+                const amount = Number(newCartridge.amount);
+                if (amount <= 0) continue;
+
+                // Генерируем пачку GUID для конкретной модели
+                const guidPromises = Array.from({ length: amount }, () => this.databaseService.generateGUID());
                 const generatedObjects = await Promise.all(guidPromises);
-                const guids = generatedObjects.map(item => item.guid);
+                const generatedGuids = generatedObjects.map(item => item.guid);
 
-                const queryText = `
-        WITH inserted_request AS (
-          INSERT INTO public.requests 
-            (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          RETURNING id
-        ),
-        inserted_cartridges AS (
-          INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangedata, lastchangeby)
-          SELECT $9, unnest($10::text[]), $11, $2, $6, $7
-          RETURNING id, guid
-        ),
-        inserted_list AS (
-          INSERT INTO public.requestslist (requestid, cartridgeid)
-          SELECT inserted_request.id, inserted_cartridges.id
-          FROM inserted_request, inserted_cartridges
-        )
-        SELECT guid FROM inserted_cartridges;
-      `;
+                allGeneratedGuids = [...allGeneratedGuids, ...generatedGuids];
 
-                const result = await this.databaseService.query(queryText, [
-                    data.type,
-                    data.isDefective,
-                    data.status,
+                const insertNewCartridgesQuery = `
+                WITH inserted_cartridges AS (
+                    INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangedata, lastchangeby)
+                    SELECT $1, u.guid, $2, $3, $4, $5
+                    FROM unnest($6::text[]) AS u(guid)
+                    RETURNING id
+                )
+                INSERT INTO public.requestslist (requestid, cartridgeid)
+                SELECT $7, ic.id
+                FROM inserted_cartridges ic;
+            `;
+                await this.databaseService.query(insertNewCartridgesQuery, [
+                    newCartridge.model,
+                    cartridgeTargetStatus,
+                    isRequestDefective,
                     currentDateTime,
-                    data.employeeID,
-                    currentDateTime,
-                    data.employeeID,
-                    data.comment || '',
-                    data.model,
-                    guids,
-                    data.isDefective ? 'Ожидает ремонта' : 'Ожидает заправки'
-                ]) as any;
-
-                const savedGuids = result.rows ? result.rows.map((r: any) => r.guid) : guids;
-
-                return {
-                    success: true,
-                    cartridgesAmount: savedGuids.length,
-                    GUIDs: savedGuids
-                };
-            }
-            else if (data.guids && data.guids.length > 0) {
-                // Целевой статус картриджа после заявки зависит от её типа:
-                // Получение — картридж выдан сотруднику, Заправка/ремонт — картридж снова готов к выдаче
-                const cartridgeTargetStatus = data.type === 'Заправка/ремонт' ? 'Готов к выдаче' : 'Выдан';
-                const result = await this.cartridgesService.changeStatusesTo(data.guids, cartridgeTargetStatus);
-                if (result.success) {
-                    // Создаём заявку и сразу привязываем к ней все переданные картриджи через requestslist
-                    const queryText = `
-          WITH inserted_request AS (
-            INSERT INTO public.requests 
-              (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id
-          )
-          INSERT INTO public.requestslist (requestid, cartridgeid)
-          SELECT ir.id, c.id
-          FROM inserted_request ir
-          CROSS JOIN public.cartridges c
-          WHERE c.guid = ANY($9::text[]);
-        `;
-
-                    await this.databaseService.query(queryText, [
-                        data.type,
-                        false,
-                        data.status,
-                        currentDateTime,
-                        data.employeeID,
-                        currentDateTime,
-                        data.employeeID,
-                        data.comment || '',
-                        data.guids
-                    ]);
-
-                    return { success: true, cartridgesAmount: data.guids.length, GUIDs: [] };
-                }
+                    employeeId,
+                    generatedGuids,
+                    requestId
+                ]);
             }
 
-            return { success: false, cartridgesAmount: 0, GUIDs: [] };
+            return {
+                success: true,
+                cartridgesAmount: existingGuids.length + allGeneratedGuids.length,
+                GUIDs: allGeneratedGuids // Возвращаем только новые сгенерированные GUID
+            };
+
         } catch (error) {
-            console.error("Ошибка createRequest:", error);
+            console.error("Ошибка в createRequest на бэкенде:", error);
             return { success: false, cartridgesAmount: 0, GUIDs: [] };
         }
     }
+
 }

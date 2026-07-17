@@ -271,161 +271,127 @@ function DashboardContent() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
         if (!currentUser) {
             alert('Ошибка: Данные сотрудника еще не загрузились!');
             return;
         }
 
-        // Дополнительная (подстраховочная) проверка на дубликаты — в норме до сюда дублирующийся
-        // GUID дойти не должен, так как lookupCartridgeByGuid уже не даёт его разрешить
+        // Проверка дубликатов среди отсканированных картриджей
         const resolvedGuids = cartridges
-            .filter((item) => item.mode === 'guid' && item.isResolved)
-            .map((item) => item.guid);
+            .filter(item => item.mode === 'guid' && item.guid)
+            .map(item => item.guid);
 
         const hasDuplicates = new Set(resolvedGuids).size !== resolvedGuids.length;
         if (hasDuplicates) {
-            showToast('В заявке указан один и тот же картридж дважды');
+            alert('В заявке указан один и тот же картридж дважды');
             return;
         }
 
-        let allGeneratedGuids: string[] = [];
-        let successfulCount = 0;
+        // Собираем валидные данные с формы
+        const manualItems = cartridges.filter(item => item.mode === 'manual' && item.model.trim() && Number(item.count) > 0);
+        const scannedItems = cartridges.filter(item => item.mode === 'guid' && item.guid && !item.lookupError);
 
-        // Отдельно копим GUID-ы, сгенерированные бэкендом именно в ручном режиме —
-        // после отправки заявки по ним нужно показать QR-коды для печати
+        if (manualItems.length === 0 && scannedItems.length === 0) {
+            alert('Заявка пуста. Нечего отправлять.');
+            return;
+        }
+
+        // Делим на две кучи: исправные и неисправные
+        // Обратите внимание: для операций отличных от ПРИЕМКА, все картриджи по умолчанию считаются исправными (isDefective = false)
+        const isPriemka = operationType === 'ПРИЕМКА';
+
+        const healthyScanned = scannedItems.filter(item => !isPriemka || !item.isDefective);
+        const healthyManual = manualItems.filter(item => !isPriemka || !item.isDefective);
+
+        const defectiveScanned = isPriemka ? scannedItems.filter(item => item.isDefective) : [];
+        const defectiveManual = isPriemka ? manualItems.filter(item => item.isDefective) : [];
+
+        // Массив для пакетов запросов (максимум 2 элемента)
+        const requestsPayloads: any[] = [];
+
+        // Функция для сборки единого комбинированного пакета
+        const buildPayload = (scanned: typeof scannedItems, manual: typeof manualItems, isDefective: boolean) => ({
+            type: OPERATION_TYPE_LABEL[operationType],
+            isDefective,
+            EmployeeID: currentUser.id,
+            comment: comment.trim(),
+            guids: scanned.map(item => item.guid), // Существующие GUID
+            newCartridges: manual.map(item => ({   // Новые картриджи (модель + количество)
+                model: item.model,
+                amount: Number(item.count)
+            }))
+        });
+
+        if (healthyScanned.length > 0 || healthyManual.length > 0) {
+            requestsPayloads.push({
+                payload: buildPayload(healthyScanned, healthyManual, false),
+                manualSource: healthyManual // сохраняем ссылку для связи модели и сгенерированных GUID
+            });
+        }
+
+        if (defectiveScanned.length > 0 || defectiveManual.length > 0) {
+            requestsPayloads.push({
+                payload: buildPayload(defectiveScanned, defectiveManual, true),
+                manualSource: defectiveManual
+            });
+        }
+
         let manuallyCreatedCartridges: { guid: string; model: string; isDefective: boolean }[] = [];
 
         try {
-            for (const item of cartridges) {
-                // Пропускаем незаполненные строки
-                if (item.mode === 'guid' && !item.isResolved) continue;
-                if (item.mode === 'manual' && !item.model.trim()) continue;
+            const url = `${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/requests`;
 
-                // Базовые поля, общие для обоих режимов
-                const baseData = {
-                    type: OPERATION_TYPE_LABEL[operationType],
-                    isDefective: false,
-                    status: 'Создана',
-                    data: currentDateTime,
-                    employeeID: currentUser.id,
-                    lastChangeData: currentDateTime,
-                    lastChangeBy: currentUser.id,
-                    comment: comment.trim(),
-                    model: '',
-                    amount: 0,
-                    guid: '',
-                    guids: [],
-                };
+            // Отправляем запросы (максимум 2 параллельных fetch-запроса)
+            const responses = await Promise.all(
+                requestsPayloads.map(async ({ payload, manualSource }) => {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error(`Ошибка сервера: ${res.status}`);
+                    const result = await res.json();
 
-                // В режиме GUID — ссылаемся на уже существующий картридж по его GUID.
-                // В ручном режиме — как раньше, создаём новую партию по модели/количеству,
-                // бэкенд сам сгенерирует GUID-ы.
-                let requestData;
-                if (operationType === 'ПРИЕМКА') {
-                    if (item.mode === 'manual') {
-                        const parsedAmount = parseInt(item.count, 10);
-
-                        // Если количество не введено или <= 0, выдаем предупреждение, а не отправляем 0
-                        if (isNaN(parsedAmount) || parsedAmount <= 0) {
-                            alert(`Укажите корректное количество для модели ${item.model}`);
-                            return; // прерываем отправку, чтобы пользователь исправил форму
-                        }
-                        // Новый картридж
-                        requestData = {
-                            ...baseData,
-                            isDefective: item.isDefective,
-                            model: item.model,
-                            amount: parsedAmount,
-                            guid: '',
-                            guids: [],
-                        };
-                    } else {
-                        // Приёмка существующего картриджа
-                        requestData = {
-                            ...baseData,
-                            isDefective: item.isDefective,
-                            model: '',
-                            amount: 0,
-                            guid: [item.guid],
-                            guids: [],
-                        };
+                    if (result.success && Array.isArray(result.GUIDs) && result.GUIDs.length > 0) {
+                        // Распределяем вернувшиеся GUID-ы обратно по моделям из этой группы
+                        let guidIndex = 0;
+                        manualSource.forEach((item: any) => {
+                            const amount = Number(item.count);
+                            for (let i = 0; i < amount; i++) {
+                                if (result.GUIDs[guidIndex]) {
+                                    manuallyCreatedCartridges.push({
+                                        guid: result.GUIDs[guidIndex],
+                                        model: item.model,
+                                        isDefective: payload.isDefective
+                                    });
+                                    guidIndex++;
+                                }
+                            }
+                        });
                     }
-                } else { // Получение и Заправка/ремонт — параметры заявки идентичны, отличается только type
-                    requestData = {
-                        ...baseData,
-                        isDefective: false,
-                        model: '',
-                        amount: 0,
-                        guid: '',
-                        guids: [item.guid],
-                    };
-                }
+                    return result;
+                })
+            );
 
-                console.log(`Отправляем в базу картридж:`, requestData);
+            // Очищаем форму при успехе
+            setCartridges([emptyRowForType(operationType)]);
+            setComment('');
 
-                const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/requests`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestData)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `Ошибка при создании заявки для картриджа`);
-                }
-
-                // Проверяем только явный success: false — бэкенд может ответить 200,
-                // но при этом ничего не создать (например, cartridgesAmount: 0).
-                // Если поля success вообще нет в ответе (например, для GUID-режима),
-                // считаем запрос успешным, раз response.ok уже это подтвердил.
-                const result = await response.json().catch(() => ({}));
-
-                if (result.success === false) {
-                    throw new Error(
-                        `Бэкенд отклонил заявку${item.mode === 'manual' ? ` для модели ${item.model}` : ''} (cartridgesAmount: ${result.cartridgesAmount ?? 0})`
-                    );
-                }
-
-                if (Array.isArray(result.GUIDs)) {
-                    allGeneratedGuids = [...allGeneratedGuids, ...result.GUIDs];
-                    // Ручной режим — картриджи только что созданы бэкендом, для них нужны QR-коды
-                    if (item.mode === 'manual') {
-                        manuallyCreatedCartridges = [
-                            ...manuallyCreatedCartridges,
-                            ...result.GUIDs.map((guid: string) => ({ guid, model: item.model, isDefective: item.isDefective })),
-                        ];
-                    }
-                } else if (item.mode === 'guid') {
-                    allGeneratedGuids = [...allGeneratedGuids, item.guid];
-                }
-                successfulCount++;
-            }
-
-            if (successfulCount > 0) {
-                setCartridges([emptyRowForType(operationType)]);
-                setComment('');
-
-                // Сценарий ручного создания: были картриджи без GUID, бэкенд сам их создал —
-                // переходим на страницу с QR-кодами
-                if (manuallyCreatedCartridges.length > 0) {
-                    // Сначала стираем старое, если оно было
-                    sessionStorage.removeItem('generatedCartridges');
-
-                    // Записываем новое
-                    sessionStorage.setItem('generatedCartridges', JSON.stringify(manuallyCreatedCartridges));
-                    router.push(`/dashboard/pages/cartridgesQR?phone=${encodeURIComponent(userPhone)}`);
-                    return;
-                }
+            // Редирект на QR-коды, если создавались новые картриджи
+            if (manuallyCreatedCartridges.length > 0) {
+                sessionStorage.removeItem('generatedCartridges');
+                sessionStorage.setItem('generatedCartridges', JSON.stringify(manuallyCreatedCartridges));
+                router.push(`/dashboard/pages/cartridgesQR?phone=${encodeURIComponent(userPhone)}`);
+            } else {
+                alert('Принято!');
             }
 
         } catch (err) {
-            const error = err as Error;
-            console.error('Критическая ошибка в цикле отправки:', error);
-            alert(`Процесс прерван из-за ошибки: ${error.message}`);
+            console.error('Ошибка отправки сгруппированных заявок:', err);
+            alert(`Ошибка: ${(err as Error).message}`);
         }
     };
+
 
     if (isLoading) return <div className="flex min-h-screen items-center justify-center text-gray-500">Загрузка...</div>;
     if (error) return <div className="flex min-h-screen items-center justify-center text-red-500">{error}</div>;
@@ -467,21 +433,21 @@ function DashboardContent() {
                         onClick={() => handleOperationTypeChange('ПРИЕМКА')}
                         className={`flex-1 py-2 text-xs font-bold tracking-wider transition-colors ${operationType === 'ПРИЕМКА' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}
                     >
-                        ПРИЕМКА
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleOperationTypeChange('ПОЛУЧЕНИЕ')}
-                        className={`flex-1 py-2 text-xs font-bold tracking-wider transition-colors ${operationType === 'ПОЛУЧЕНИЕ' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}
-                    >
-                        ПОЛУЧЕНИЕ
+                        ПОЛОЖИТЬ
                     </button>
                     <button
                         type="button"
                         onClick={() => handleOperationTypeChange('ЗАПРАВКА_РЕМОНТ')}
                         className={`flex-1 py-2 text-xs font-bold tracking-wider transition-colors ${operationType === 'ЗАПРАВКА_РЕМОНТ' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}
                     >
-                        ЗАПРАВКА/РЕМОНТ
+                        ЗАПРАВИТЬ И ОТРЕМОНТИРОВАТЬ
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleOperationTypeChange('ПОЛУЧЕНИЕ')}
+                        className={`flex-1 py-2 text-xs font-bold tracking-wider transition-colors ${operationType === 'ПОЛУЧЕНИЕ' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}
+                    >
+                        ЗАБРАТЬ
                     </button>
                 </div>
 

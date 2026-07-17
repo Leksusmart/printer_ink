@@ -1,44 +1,46 @@
 import { IsString, IsBoolean, IsNumber, IsOptional, IsArray } from 'class-validator';
 
 export class CreateRequestDto {
-  @IsString()
-  type: string;
+    @IsString()
+    type: string;
 
-  @IsBoolean()
-  isDefective: boolean;
+    @IsBoolean()
+    @IsOptional() // 👈 Сделайте его необязательным, так как для выдачи этот флаг не отправляется
+    isDefective?: boolean;
 
-  @IsString()
-  status: string;
+    @IsString()
+    @IsOptional() // 👈 Тоже сделайте необязательным, так как бэкенд вычисляет статус сам
+    status?: string;
 
-  @IsString()
-  data: string;
+    @IsString()
+    data: string;
 
-  @IsNumber()
-  employeeID: number;
+    @IsNumber()
+    employeeID: number;
 
-  @IsString()
-  lastChangeData: string;
+    @IsString()
+    lastChangeData: string;
 
-  @IsNumber()
-  lastChangeBy: number;
+    @IsNumber()
+    lastChangeBy: number;
 
-  @IsString()
-  @IsOptional()
-  comment?: string;
+    @IsString()
+    @IsOptional()
+    comment?: string;
 
-  @IsString()
-  @IsOptional()
-  model?: string;
+    @IsString()
+    @IsOptional()
+    model?: string;
 
-  @IsNumber()
-  @IsOptional()
-  amount?: number;
+    @IsNumber()
+    @IsOptional()
+    amount?: number;
 
-  @IsString()
-  @IsOptional()
-  guid?: string;
+    @IsString()
+    @IsOptional()
+    guid?: string;
 
-  @IsArray()
-  @IsOptional()
-  guids?: string[];
+    @IsArray()
+    @IsOptional()
+    guids?: string[];
 }

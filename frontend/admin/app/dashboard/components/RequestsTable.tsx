@@ -168,7 +168,31 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
                                                 ) : (
                                                     <span className="text-gray-400 italic">—</span>
                                                 )
+                                            ) : (col.key === 'data' || col.key === 'lastchangedata') ? (
+                                                row[col.key] ? (() => {
+                                                    const parsedDate = new Date(String(row[col.key]));
+
+                                                    // Если дата не валидна — выводим как есть
+                                                    if (isNaN(parsedDate.getTime())) {
+                                                        return <span>{String(row[col.key])}</span>;
+                                                    }
+
+                                                    // Вручную достаем компоненты даты (они автоматически берутся по локальному времени компьютера)
+                                                    const day = String(parsedDate.getDate()).padStart(2, '0');
+                                                    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                                                    const year = String(parsedDate.getFullYear()).slice(-2); // Берем последние 2 цифры года
+
+                                                    // ВНИМАНИЕ: getHours() вернет честные 24 часа (например, 14 вместо 02)
+                                                    const hours = String(parsedDate.getHours()).padStart(2, '0');
+                                                    const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
+
+                                                    // Собираем идеальную строку: "17.07.26 14:02"
+                                                    return <span>{`${day}.${month}.${year} ${hours}:${minutes}`}</span>;
+                                                })() : (
+                                                    <span className="text-gray-400 italic">—</span>
+                                                )
                                             ) : (
+                                                // Стандартный вывод для всех остальных текстовых полей
                                                 String(row[col.key] || '—')
                                             )}
                                         </td>
