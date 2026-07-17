@@ -24,8 +24,5 @@ RUN npm install --omit=dev
 # Копируем скомпилированный код из первого этапа
 COPY --from=builder /app/dist ./dist
 
-# Бэкенд по умолчанию будет работать на порту 3000 внутри контейнера
-EXPOSE 3000
-
-# Запускаем готовый JavaScript код
+# Запускаем
 CMD ["npm", "run", "start:prod"]
