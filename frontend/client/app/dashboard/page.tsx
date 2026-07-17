@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-
+import QRScanner from './components/QRScanner';
 interface CartridgeItem {
     mode: 'guid' | 'manual';
     guid: string;
@@ -35,6 +35,10 @@ const emptyRowForType = (_type: OperationType): CartridgeItem => ({
     mode: 'guid', guid: '', model: '', status: '', count: '', isDefective: false, isResolved: false, lookupError: ''
 });
 
+const qrImageUrl = (data: string) =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(data)}`;
+
+
 function DashboardContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -48,8 +52,11 @@ function DashboardContent() {
     const [comment, setComment] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    // Всплывающее предупреждение по центру экрана (например, дубликат GUID), само исчезает через 2 сек
     const [toastMessage, setToastMessage] = useState('');
+
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [activeScanRowIndex, setActiveScanRowIndex] = useState<number | null>(null);
+
 
     const showToast = (message: string) => {
         setToastMessage(message);
@@ -60,13 +67,45 @@ function DashboardContent() {
         item.mode === 'guid' ? item.isResolved : item.model.trim() !== ''
     );
 
+    const openScannerForRow = (index: number) => {
+        setActiveScanRowIndex(index);
+        setIsScannerOpen(true);
+    };
+
+    const handleScanSuccess = async (scannedGuid: string) => {
+        if (activeScanRowIndex === null) return;
+        const cleanGuid = scannedGuid.trim();
+
+        // Проверка на дубликаты среди уже имеющихся строк
+        const isDuplicate = cartridges.some((item, idx) => idx !== activeScanRowIndex && item.guid === cleanGuid);
+        if (isDuplicate) {
+            showToast('Этот картридж уже добавлен в список!');
+            setIsScannerOpen(false);
+            setActiveScanRowIndex(null);
+            return;
+        }
+
+        // Просто обновляем состояние строки
+        const updatedCartridges = [...cartridges];
+        updatedCartridges[activeScanRowIndex] = {
+            ...updatedCartridges[activeScanRowIndex],
+            mode: 'guid',
+            guid: cleanGuid,
+            lookupError: ''
+        };
+
+        setCartridges(updatedCartridges);
+        setTimeout(() => {
+            setIsScannerOpen(false);
+            setActiveScanRowIndex(null);
+        }, 100);
+    };
     useEffect(() => {
         async function loadInitialData() {
             try {
                 setIsLoading(true);
                 if (!userPhone) throw new Error('Телефон не указан');
 
-                // === ИЗМЕНЕНИЕ: POST вместо GET ===
                 const employerResponse = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/admin-login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -93,6 +132,16 @@ function DashboardContent() {
 
         loadInitialData();
     }, [userPhone]);
+
+    useEffect(() => {
+        const rowIndexToCheck = cartridges.findIndex(
+            (item) => item.mode === 'guid' && item.guid.trim() !== '' && !item.isResolved && !item.lookupError
+        );
+
+        if (rowIndexToCheck !== -1 && cartridges[rowIndexToCheck].guid.length === 36) {
+            lookupCartridgeByGuid(rowIndexToCheck);
+        }
+    }, [cartridges]);
 
     const addCartridgeRow = () => {
         setCartridges([...cartridges, emptyRowForType(operationType)]);
@@ -161,6 +210,7 @@ function DashboardContent() {
     // GET /cartridges/search?guid=... → { id, model, guid, status, isDefective, lastchangedata, lastchangeby }
     const lookupCartridgeByGuid = async (index: number) => {
         const guidValue = cartridges[index].guid.trim();
+
         if (!guidValue) return;
 
         try {
@@ -398,12 +448,23 @@ function DashboardContent() {
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans">
+            {/* ТОСТ ПРЕДУПРЕЖДЕНИЯ */}
             {toastMessage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
                     <div className="rounded bg-gray-900/90 px-5 py-3 text-sm font-medium text-white shadow-lg">
                         {toastMessage}
                     </div>
                 </div>
+            )}
+            {/* МОДАЛЬНОЕ ОКНО СКАНИРОВАНИЯ */}
+            {isScannerOpen && (
+                <QRScanner
+                    onScanSuccess={handleScanSuccess}
+                    onClose={() => {
+                        setIsScannerOpen(false);
+                        setActiveScanRowIndex(null);
+                    }}
+                />
             )}
 
             <div className="w-full max-w-xl space-y-4 rounded border border-blue-400 bg-white p-6 shadow-sm">
@@ -460,11 +521,27 @@ function DashboardContent() {
                                     <div className="flex gap-2">
                                         <button
                                             type="button"
-                                            title="Сканировать QR (скоро)"
-                                            className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded border border-gray-300 bg-white text-sm font-bold text-gray-400"
+                                            title={item.model ? "Пересканировать QR-код" : "Нажмите чтобы начать сканировать QR картриджа"}
+                                            onClick={() => openScannerForRow(index)}
+                                            className={`flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded transition-colors
+        ${item.model
+                                                    ? "border border-transparent bg-transparent" // Картинка без рамок, когда картридж НАЙДЕН
+                                                    : "border border-blue-500 bg-blue-50 text-sm font-bold text-blue-600 hover:bg-blue-100 active:bg-blue-200" // Синяя кнопка во время ввода/сканирования
+                                                }`}
                                         >
-                                            QR
+                                            {item.model ? (
+                                                // Картинка генерируется и показывается ТОЛЬКО если сервер подтвердил существование картриджа
+                                                <img
+                                                    src={qrImageUrl(item.guid)}
+                                                    alt="ERROR"
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                // Пока картридж не найден или текст только вводится, отображается надпись
+                                                <span>Scan QR</span>
+                                            )}
                                         </button>
+
 
                                         <div className="flex-1 space-y-2">
                                             {item.model ? (
@@ -498,7 +575,7 @@ function DashboardContent() {
                                                             </div>
                                                         </div>
                                                     )}
-                                                    
+
                                                     {!item.isResolved && (
                                                         <button
                                                             type="button"
@@ -515,7 +592,37 @@ function DashboardContent() {
                                                         type="text"
                                                         placeholder="Введите GUID"
                                                         value={item.guid}
-                                                        onChange={(e) => updateCartridge(index, 'guid', e.target.value)}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                const updated = [...cartridges];
+
+                                                                const isDuplicate = cartridges.some(
+                                                                    (c, i) => i !== index && c.mode === 'guid' && c.guid.trim() === value && value !== ''
+                                                                );
+                                                                if (isDuplicate) {
+                                                                    showToast('Этот картридж уже добавлен в заявку!');
+
+                                                                    // Сбрасываем текущую строку, чтобы не плодить дубликаты
+                                                                    updated[index] = {
+                                                                        ...updated[index],
+                                                                        mode: 'guid',
+                                                                        guid: '',
+                                                                        model: '',
+                                                                        status: '',
+                                                                        isResolved: false,
+                                                                        lookupError: ''
+                                                                    };
+                                                                    setCartridges(updated);
+                                                                    return;
+                                                                }
+                                                                updated[index] = {
+                                                                    ...updated[index],
+                                                                    mode: 'guid',
+                                                                    guid: value,
+                                                                    lookupError: ''
+                                                                };
+                                                                setCartridges(updated);
+                                                            }}
                                                         className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 placeholder-gray-400"
                                                     />
                                                     <button
@@ -635,8 +742,8 @@ function DashboardContent() {
                     <button
                         type="submit"
                         className={`w-full py-3 font-bold text-xs tracking-wider rounded uppercase transition-colors duration-200 ${isFormValid
-                                ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
-                                : 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                            ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                            : 'bg-gray-200 text-gray-600 cursor-not-allowed'
                             }`}
                     >
                         отправить заявку
