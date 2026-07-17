@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import QRScanner from './components/QRScanner';
 interface CartridgeItem {
     mode: 'guid' | 'manual';
@@ -41,8 +41,6 @@ const qrImageUrl = (data: string) =>
 
 function DashboardContent() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const userPhone = searchParams.get('phone') || '';
 
     const [currentUser, setCurrentUser] = useState<Employer | null>(null);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
@@ -57,6 +55,7 @@ function DashboardContent() {
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [activeScanRowIndex, setActiveScanRowIndex] = useState<number | null>(null);
 
+    let userPhone = 'ERROR';
 
     const showToast = (message: string) => {
         setToastMessage(message);
@@ -100,13 +99,27 @@ function DashboardContent() {
             setActiveScanRowIndex(null);
         }, 100);
     };
+
     useEffect(() => {
         async function loadInitialData() {
             try {
                 setIsLoading(true);
-                if (!userPhone) throw new Error('Телефон не указан');
+                setError('');
+                const session = localStorage.getItem('client_session');
+                if (!session) {
+                    router.push('/');
+                    return;
+                }
 
-                const employerResponse = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/admin-login`, {
+                try {
+                    const user = JSON.parse(session);
+                    userPhone = user.phone;
+                } catch (e) {
+                    router.push('/');
+                    return;
+                }
+
+                const employerResponse = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: userPhone })
@@ -118,11 +131,14 @@ function DashboardContent() {
 
                 // Загрузка моделей
                 const cartridgesResponse = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/cartridges`);
-                if (cartridgesResponse.ok) {
-                    const data = await cartridgesResponse.json();
-                    const models = [...new Set<string>(data.map((c: any) => c.model))];
-                    setAvailableModels(models);
+                if (!cartridgesResponse.ok) {
+                    throw new Error('Не удалось получить список картриджей');
                 }
+
+                const data = await cartridgesResponse.json();
+                const models = [...new Set<string>(data.map((c: any) => c.model))];
+                setAvailableModels(models);
+
             } catch (err) {
                 setError((err as Error).message || 'Ошибка загрузки');
             } finally {
@@ -131,7 +147,7 @@ function DashboardContent() {
         }
 
         loadInitialData();
-    }, [userPhone]);
+    }, [router]);
 
     useEffect(() => {
         const rowIndexToCheck = cartridges.findIndex(

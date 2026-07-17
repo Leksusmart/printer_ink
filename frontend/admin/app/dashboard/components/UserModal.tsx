@@ -19,7 +19,9 @@ export default function UserModal({ isOpen, onClose, onSuccess }: UserModalProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
+      console.log("Текущее значение телефона в стейте перед отправкой:", phone); // <-- Добавьте это
+
+      setMessage('');
 
     try {
         const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/create-user`, {

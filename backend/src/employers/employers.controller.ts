@@ -26,27 +26,28 @@ export class EmployersController {
         return employer;
     }
 
-    @Post('admin-login')
-    async adminLogin(@Body() body: { phone: string; password?: string }) {
+    @Post('login')
+    async login(@Body() body: { phone: string; password?: string }) {
         let checkedPhone = normalizePhone(body.phone);
 
         const employer = await this.employersService.findByPhone(checkedPhone);
 
         if (!employer) {
-            throw new UnauthorizedException('Сотрудник не найден');
-        }
-
-        if (employer.role !== 'Admin') {
-            throw new UnauthorizedException('У вас нет прав администратора');
+            throw new UnauthorizedException(`Сотрудник с номером не найден`);
         }
 
         // Для клиента (без пароля) — пропускаем проверку пароля
         if (body.password) {
+
+            if (employer.role !== 'Admin') {
+                throw new UnauthorizedException('У вас нет прав администратора');
+            }
+
             const isPasswordMatching = await bcrypt.compare(body.password, employer.password!);
             if (!isPasswordMatching) {
                 throw new UnauthorizedException('Неверный пароль');
             }
-        }
+        } else return employer;
 
         const { password, ...result } = employer;
         return result;

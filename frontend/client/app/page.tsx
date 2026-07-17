@@ -6,9 +6,7 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
     const [phone, setPhone] = useState('');
-    // 2. Создаем состояние для отображения ошибки, если номера нет в базе
     const [error, setError] = useState('');
-    // 3. Состояние загрузки, чтобы пользователь понимал, что запрос выполняется
     const [isLoading, setIsLoading] = useState(false);
 
     // Инициализируем маршрутизатор
@@ -16,31 +14,26 @@ export default function LoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError(''); // Сбрасываем старую ошибку перед новым запросом
-        setIsLoading(true); // Включаем режим загрузки
+        setError('');
+        setIsLoading(true);
 
         try {
-            // 4. Делаем запрос к контроллеру бэкенда
-            // Мы передаем введенный телефон в параметры строки (?phone=...)
-            const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/Employers/search?phone=${encodeURIComponent(phone)}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            // Отправляем POST запрос на эндпоинт авторизации клиента
+            const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone}),
             });
 
-            // 5. Если бэкенд ответил ошибкой (например, 404 Номер не найден)
+            const data = await response.json().catch(() => null);
+
             if (!response.ok) {
-                // Пробуем прочитать текст ошибки от бэкенда
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Сотрудник с таким номером не найден');
+                throw new Error(data?.message || 'Сотрудник с таким номером не найден или ошибка связи');
             }
 
-            // 6. Если всё хорошо, получаем данные пользователя
-            const user = await response.json();
+            localStorage.setItem('client_session', JSON.stringify(data));
 
-            // 7. Перенаправляем пользователя на страницу /dashboard
-            router.push(`/dashboard?phone=${encodeURIComponent(phone)}`);
+            router.push('/dashboard');
 
         } catch (err) {
             const error = err as Error;
@@ -57,7 +50,6 @@ export default function LoginPage() {
                     Вход в систему
                 </h2>
 
-                {/* 8. Блок для отображения ошибки, если она есть */}
                 {error && (
                     <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-600">
                         {error}
@@ -71,10 +63,10 @@ export default function LoginPage() {
                     <input
                         id="phone"
                         type="tel"
-                        placeholder="89008000010" // Твой бэк ожидает такой формат в Query
+                        placeholder="89008000010"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        disabled={isLoading} // Блокируем поле во время запроса
+                        disabled={isLoading}
                         required
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
                     />
