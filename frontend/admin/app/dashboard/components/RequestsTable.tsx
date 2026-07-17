@@ -85,12 +85,9 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
         { key: 'data', label: 'Дата создания' },
         { key: 'employee_name', label: 'Кто создал' },
         ...(showType ? [{ key: 'type' as SortableKey, label: 'Тип' }] : []),
-        ...(showStatus ? [{ key: 'status' as SortableKey, label: 'Статус' }] : []),
         { key: 'cartridges_count', label: 'Картриджи (шт)' },
         ...(showDefect ? [{ key: 'isdefective' as SortableKey, label: 'Дефект' }] : []),
         { key: 'comment', label: 'Комментарий' },
-        { key: 'lastchangeby_name', label: 'Кто изменил' },
-        { key: 'lastchangedata', label: 'Дата изменения' },
     ];
 
     return (

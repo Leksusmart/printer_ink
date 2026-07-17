@@ -8,19 +8,14 @@ interface UserModalProps {
     onSuccess: () => void;
 }
 
-// Функция форматирования номера под маску +7 (XXX) XXX-XX-XX
 const formatPhoneNumber = (value: string): string => {
     if (!value) return value;
 
-    // Оставляем только цифры
     const phoneNumber = value.replace(/[^\d]/g, '');
     const phoneNumberLength = phoneNumber.length;
 
-    // Если пустая строка или первая цифра была удалена
     if (phoneNumberLength === 0) return '';
 
-    // Базовая фиксация первой цифры (для РФ обычно 7 или 8)
-    // Если пользователь начинает ввод не с 7 или 8, мы принудительно делаем её семеркой
     let firstDigit = '+7';
     if (phoneNumber[0] === '8') firstDigit = '+7';
 
@@ -46,7 +41,6 @@ export default function UserModal({ isOpen, onClose, onSuccess }: UserModalProps
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
 
-    // Обработчик изменения ввода телефона
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const formattedValue = formatPhoneNumber(e.target.value);
         setPhone(formattedValue);
@@ -55,10 +49,32 @@ export default function UserModal({ isOpen, onClose, onSuccess }: UserModalProps
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        const cleanFullname = fullname.trim().replace(/\s+/g, ' ');
+        const words = cleanFullname ? cleanFullname.split(' ') : [];
+        if (words.length !== 3) {
+            setMessage('Ошибка: Введите полные ФИО (Фамилия Имя Отчество)');
+            return;
+        }
+        const nameRegex = /^[-\p{L}]+ [-\p{L}]+ [-\p{L}]+$/u;
+        if (!nameRegex.test(cleanFullname)) {
+            setMessage('Ошибка: ФИО должно содержать только буквы');
+            return;
+        }
+        const formattedFullname = words
+            .map(word =>
+                word
+                    .split('-')
+                    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                    .join('-')
+            )
+            .join(' ');
+
         if (phone.length < 18) {
             setMessage('Ошибка: Введите полный номер телефона');
             return;
         }
+
+        const cleanPhone = '+7' + phone.replace(/[^\d]/g, '').slice(1);
 
         setLoading(true);
         setMessage('');
@@ -67,7 +83,7 @@ export default function UserModal({ isOpen, onClose, onSuccess }: UserModalProps
             const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/create-user`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullname, phone, role, password })
+                body: JSON.stringify({ fullname: formattedFullname, phone: cleanPhone, role, password })
             });
 
             if (res.ok) {
@@ -96,13 +112,12 @@ export default function UserModal({ isOpen, onClose, onSuccess }: UserModalProps
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input type="text" placeholder="ФИО" value={fullname} onChange={e => setFullname(e.target.value)} required className="w-full border p-3 rounded" />
-                    {/* Измененный инпут с поддержкой маски и валидацией */}
                     <input
                         type="tel"
                         placeholder="+7 (999) 999-99-99"
                         value={phone}
                         onChange={handlePhoneChange}
-                        maxLength={18} // Ограничиваем максимальную длину строки по маске
+                        maxLength={18}
                         required
                         className="w-full border p-3 rounded"
                     />
