@@ -22,7 +22,7 @@ CREATE TABLE public.cartridges (
     guid character varying(36) NOT NULL,
     status character varying(20),
     isdefective boolean DEFAULT false,
-    lastchangedata timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    lastchangedata timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
     lastchangeby integer
 );
 
@@ -68,9 +68,9 @@ CREATE TABLE public.requests (
     type character varying(20) NOT NULL,
 	isDefective bool,
     status character varying(20),
-    data timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    lastchangedata timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
     employee integer,
-    lastchangedata timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    lastchangedata timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
     lastchangeby integer,
     comment character varying(255)
 );
