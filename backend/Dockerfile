@@ -28,4 +28,4 @@ COPY --from=builder /app/dist ./dist
 EXPOSE 3000
 
 # Запускаем готовый JavaScript код
-CMD ["node", "dist/main.js"]
+CMD ["npm", "run", "start:prod"]

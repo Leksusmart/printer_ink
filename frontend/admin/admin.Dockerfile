@@ -31,9 +31,5 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 
-# Указываем стандартный внутренний порт для Next.js
-# Админка работает на порту 3002
-EXPOSE 3002
-
 # Запускаем
-CMD ["npm", "run", "start"]
+CMD ["npx", "next", "start"]

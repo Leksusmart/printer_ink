@@ -5,7 +5,7 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   env: {
     CLIENT_URL: process.env.CLIENT_URL,
 	PORT_BACKEND: process.env.PORT_BACKEND,

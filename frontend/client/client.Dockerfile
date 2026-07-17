@@ -31,9 +31,5 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 
-# Указываем стандартный внутренний порт для Next.js
-# Клиент работает на порту 3001
-EXPOSE 3001
-
-# Запускаем готовый продакшен-сервер
-CMD ["npm", "run", "start"]
+# Запускаем
+CMD ["npx", "next", "start"]

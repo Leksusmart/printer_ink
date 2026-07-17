@@ -124,8 +124,9 @@ CREATE TABLE public.dashboard_settings (
     CONSTRAINT single_row CHECK (id = 1) -- Гарантирует, что строка в таблице будет всегда только одна
 );
 
--- Вставляем дефолтную строчку со скриншота при создании базы
-INSERT INTO public.dashboard_settings (id, refillThreshold) VALUES (1, 10) ON CONFLICT DO NOTHING;
+COPY public.dashboard_settings (id, refillThreshold) FROM stdin;
+1	10
+\.
 
 COPY public.employers (id, phone, fullname, role, password) FROM stdin;
 1	+79991112233	Иванов Иван Иванович	Admin	$2b$10$vn6tNBc5qvNrYMJtxCkEe.i0H6vv79gVmZO58U3Zo73gNh2pI3vFi

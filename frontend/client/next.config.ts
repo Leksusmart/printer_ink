@@ -5,7 +5,7 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   output: 'export',
   images: { unoptimized: true },
   env: {
