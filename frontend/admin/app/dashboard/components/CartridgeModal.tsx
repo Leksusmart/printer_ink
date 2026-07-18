@@ -131,7 +131,7 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
                     </div>
                     <div>
                         <label className="block text-sm mb-1">Комментарий</label>
-                        <input type="text" value={comment} onChange={e => setComment(e.target.value)} required className="w-full border p-3 rounded" />
+                        <input type="text" value={comment} onChange={e => setComment(e.target.value)} className="w-full border p-3 rounded" />
                     </div>
                     <div className="flex gap-3 pt-4">
                         <button type="button" onClick={onClose} className="flex-1 py-3 border rounded">Отмена</button>
