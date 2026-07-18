@@ -135,10 +135,10 @@ COPY public.employers (id, phone, fullname, role, password) FROM stdin;
 \.
 
 
-SELECT pg_catalog.setval('public.cartridges_id_seq', 1, true);
-SELECT pg_catalog.setval('public.employers_id_seq', 2, true);
-SELECT pg_catalog.setval('public.requests_id_seq', 1, true);
-SELECT pg_catalog.setval('public.requestslist_id_seq', 1, true);
+SELECT pg_catalog.setval('public.cartridges_id_seq', 1, false);
+SELECT pg_catalog.setval('public.employers_id_seq', 2, false);
+SELECT pg_catalog.setval('public.requests_id_seq', 1, false);
+SELECT pg_catalog.setval('public.requestslist_id_seq', 1, false);
 
 ALTER TABLE ONLY public.cartridges
     ADD CONSTRAINT cartridges_guid_key UNIQUE (guid);
