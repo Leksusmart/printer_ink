@@ -116,8 +116,8 @@ export default function DashboardPage() {
                         '📋 История абсолютно всех заявок',
                         '⚡ Заявки на заправку/ремонт',
                         '📥 Заявки на приёмку',
-                        '🗑️ Заявки на списание',
                         '📤 Заявки на получение',
+                        '🗑️ Заявки на списание',
                     ].map((tabTitle, index) => {
                         const isActive = activeTableTab === index;
                         return (
@@ -141,7 +141,7 @@ export default function DashboardPage() {
                     {activeTableTab === 0 && (
                         <RequestsTable
                             title="📋 История абсолютно всех заявок"
-                            data={historyData}
+                            tableData={historyData}
                             showType
                             showStatus
                             showDefect
@@ -152,7 +152,7 @@ export default function DashboardPage() {
                     {activeTableTab === 1 && (
                         <RequestsTable
                             title="⚡ Заявки на заправку/ремонт"
-                            data={refillRepairData}
+                            tableData={refillRepairData}
                             rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
                     )}
@@ -160,7 +160,7 @@ export default function DashboardPage() {
                     {activeTableTab === 2 && (
                         <RequestsTable
                             title="📥 Заявки на приёмку"
-                            data={receivingData}
+                            tableData={receivingData}
                             showDefect
                             rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
@@ -168,19 +168,20 @@ export default function DashboardPage() {
 
                     {activeTableTab === 3 && (
                         <RequestsTable
-                            title="🗑️ Заявки на списание"
-                            data={scrapData}
+                            title="📤 Заявки на получение"
+                            tableData={issuanceData}
                             rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
                     )}
 
                     {activeTableTab === 4 && (
                         <RequestsTable
-                            title="📤 Заявки на получение"
-                            data={issuanceData}
+                            title="🗑️ Заявки на списание"
+                            tableData={scrapData}
                             rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
                     )}
+
                 </div>
             </div>
 

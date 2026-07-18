@@ -69,8 +69,11 @@
   <Folder Name="/frontend/client/app/dashboard/">
     <File Path="frontend/client/app/dashboard/page.tsx" />
   </Folder>
+  <Folder Name="/frontend/client/app/dashboard/components/">
+    <File Path="frontend/client/app/dashboard/components/QRScanner.tsx" />
+  </Folder>
   <Folder Name="/frontend/client/app/dashboard/pages/" />
   <Folder Name="/frontend/client/app/dashboard/pages/cartridgesQR/">
-    <File Path="frontend/client/app/dashboard/components/cartridgesQR/page.tsx" />
+    <File Path="frontend/client/app/dashboard/pages/cartridgesQR/page.tsx" />
   </Folder>
 </Solution>

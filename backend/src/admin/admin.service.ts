@@ -66,31 +66,33 @@ export class AdminService {
 
     private getBaseRequestQuery(whereClause: string = ''): string {
         return `
-	  SELECT 
-		r.id, TO_CHAR(r.data, 'DD.MM.YY HH:MI') as data,
-		e.fullname as employee_name, r.type, r.status,
-		COUNT(rl.cartridgeid)::int as cartridges_count,
-		r.isdefective, COALESCE(r.comment, '') as comment,
-		le.fullname as lastchangeby_name,
-		TO_CHAR(r.lastchangedata, 'DD.MM.YY HH:MI') as lastchangedata
-	  FROM public.requests r
-	  LEFT JOIN public.employers e ON r.employee = e.id
-	  LEFT JOIN public.requestslist rl ON r.id = rl.requestid
-	  LEFT JOIN public.employers le ON r.lastchangeby = le.id
-	  ${whereClause}
-	  GROUP BY 
-        r.id, 
-        r.data, 
-        e.fullname, 
-        r.type, 
-        r.status, 
-        r.isdefective, 
-        r.comment, 
-        le.fullname, 
-        r.lastchangedata
-      ORDER BY r.data DESC
-	`;
+  SELECT 
+    r.id, 
+    TO_CHAR(r.data, 'DD.MM.YYYY HH24:MI') as data,
+    e.fullname as employee_name, r.type, r.status,
+    COUNT(rl.cartridgeid)::int as cartridges_count,
+    r.isdefective, COALESCE(r.comment, '') as comment,
+    le.fullname as lastchangeby_name,
+    TO_CHAR(r.lastchangedata, 'DD.MM.YYYY HH24:MI') as lastchangedata
+  FROM public.requests r
+  LEFT JOIN public.employers e ON r.employee = e.id
+  LEFT JOIN public.requestslist rl ON r.id = rl.requestid
+  LEFT JOIN public.employers le ON r.lastchangeby = le.id
+  ${whereClause}
+  GROUP BY 
+    r.id, 
+    r.data, 
+    e.fullname, 
+    r.type, 
+    r.status, 
+    r.isdefective, 
+    r.comment, 
+    le.fullname, 
+    r.lastchangedata
+  ORDER BY r.data DESC
+`;
     }
+
 
     // История абсолютно всех заявок
     async getHistoryLogs() {

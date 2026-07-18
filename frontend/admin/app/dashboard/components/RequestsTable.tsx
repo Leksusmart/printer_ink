@@ -7,12 +7,9 @@ interface AdminRequestRow {
     data: string;
     employee_name: string;
     type: string;
-    status: string;
     cartridges_count: number;
     isdefective: boolean;
     comment: string;
-    lastchangeby_name: string;
-    lastchangedata: string;
 }
 
 interface CartridgeDetail {
@@ -25,7 +22,7 @@ interface CartridgeDetail {
 
 interface RequestsTableProps {
     title: string;
-    data: AdminRequestRow[];
+    tableData: AdminRequestRow[];
     showType?: boolean;
     showStatus?: boolean;
     showDefect?: boolean;
@@ -34,7 +31,7 @@ interface RequestsTableProps {
 
 type SortableKey = keyof AdminRequestRow;
 
-export default function RequestsTable({ title, data, showType, showDefect, rowsCollapsedLimit }: RequestsTableProps) {
+export default function RequestsTable({ title, tableData, showType, showDefect, rowsCollapsedLimit }: RequestsTableProps) {
     const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'asc' | 'desc' } | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [openFilterMenu, setOpenFilterMenu] = useState<SortableKey | null>(null);
@@ -53,6 +50,22 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
         items: CartridgeDetail[];
     }>({ isOpen: false, requestId: null, isLoading: false, error: '', items: [] });
 
+    const formatFIO = (fullName: string): string => {
+        if (!fullName) return '';
+
+        // Разбиваем строку по пробелам и убираем лишние пробелы
+        const parts = fullName.trim().split(/\s+/);
+
+        // Если имя состоит только из одного слова (например, только Фамилия)
+        if (parts.length === 1) return parts[0];
+
+        const lastName = parts[0];
+        const firstNameLetter = parts[1] ? ` ${parts[1][0]}.` : '';
+        const middleNameLetter = parts[2] ? ` ${parts[2][0]}.` : '';
+
+        return `${lastName}${firstNameLetter}${middleNameLetter}`;
+    };
+
     const openCartridgeDetails = async (requestId: number) => {
         setCartridgeDetailsModal({ isOpen: true, requestId, isLoading: true, error: '', items: [] });
         try {
@@ -69,14 +82,14 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
     };
 
     const uniqueValues = useMemo(() => {
-        const employees = [...new Set(data.map(item => item.employee_name).filter(Boolean))].sort();
-        const types = [...new Set(data.map(item => item.type).filter(Boolean))].sort();
+        const employees = [...new Set(tableData.map(item => item.employee_name).filter(Boolean))].sort();
+        const types = [...new Set(tableData.map(item => item.type).filter(Boolean))].sort();
         return { employees, types };
-    }, [data]);
+    }, [tableData]);
 
     // Применяем фильтры + сортировку
     const filteredAndSortedItems = useMemo(() => {
-        let result = [...data];
+        let result = [...tableData];
 
         // Применяем фильтры
         if (filters.employee_name) {
@@ -101,7 +114,7 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
         }
 
         return result;
-    }, [data, filters, sortConfig]);
+    }, [tableData, filters, sortConfig]);
 
 
     const requestSort = (key: SortableKey) => {
@@ -129,7 +142,7 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
         { key: 'data', label: 'Дата создания' },
         { key: 'employee_name', label: 'Кто создал' },
         ...(showType ? [{ key: 'type' as SortableKey, label: 'Тип' }] : []),
-        { key: 'cartridges_count', label: 'Картриджи (шт)' },
+        { key: 'cartridges_count', label: 'Картриджи' },
         ...(showDefect ? [{ key: 'isdefective' as SortableKey, label: 'Дефект' }] : []),
         { key: 'comment', label: 'Комментарий' },
     ];
@@ -180,24 +193,17 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
                                             }
                                         }}
                                     >
-                                        <div className="flex items-center justify-between w-full">
+                                        <div className="flex items-center justify-center gap-1 w-full">
                                             <div className="flex items-center gap-1">
                                                 {col.label}
-                                                {currentFilter !== undefined && <span className="text-blue-600 text-xs">●</span>}
+                                                {currentFilter !== undefined && <span className="text-blue-600 text-xs"> ●</span>}
                                             </div>
 
                                             {hasFilter ? (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setOpenFilterMenu(openFilterMenu === col.key ? null : col.key);
-                                                    }}
-                                                    className="text-gray-400 hover:text-gray-600 text-xs ml-2"
-                                                >
-                                                    ▼
-                                                </button>
+
+                                                <span className="text-gray-400 hover:text-gray-600 text-xs ml-2"> ▼</span>
                                             ) : (
-                                                <span className="text-xs text-gray-400">
+                                                <span className="text-gray-400 hover:text-gray-600 text-xs ml-2">
                                                     {isSorted ? (sortConfig!.direction === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
                                                 </span>
                                             )}
@@ -263,6 +269,7 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
                                 </td>
                             </tr>
                         ) : (
+
                             visibleItems.map((row) => (
                                 <tr key={row.id} className="transition-colors hover:bg-gray-50/70">
                                     {columns.map((col) => (
@@ -272,7 +279,7 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
                                         >
                                             {col.key === 'cartridges_count' ? (
                                                 <div className="flex items-center gap-3">
-                                                    <span className="font-medium">{row.cartridges_count}</span>
+                                                    <span className="font-medium">{row.cartridges_count} шт.</span>
                                                     <button
                                                         onClick={() => openCartridgeDetails(row.id)}
                                                         className="rounded border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600 hover:bg-blue-100 transition-colors"
@@ -286,25 +293,16 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
                                                 ) : (
                                                     <span className="rounded bg-green-100 px-3 py-1 text-sm font-medium text-green-700">Нет</span>
                                                 )
-                                            ) : col.key === 'status' ? (
-                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${row.status === 'Завершен' || row.status === 'Завершена' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                                                    {row.status}
-                                                </span>
-                                            ) : col.key === 'employee_name' || col.key === 'lastchangeby_name' ? (
-                                                row[col.key] ? <span className="font-medium">{row[col.key]}</span> : <span className="text-gray-400 italic">—</span>
-                                            ) : (col.key === 'data' || col.key === 'lastchangedata') ? (
-                                                row[col.key] ? (() => {
-                                                    const parsedDate = new Date(String(row[col.key]));
-                                                    if (isNaN(parsedDate.getTime())) return <span>{String(row[col.key])}</span>;
-                                                    const day = String(parsedDate.getDate()).padStart(2, '0');
-                                                    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-                                                    const year = String(parsedDate.getFullYear()).slice(-2);
-                                                    const hours = String(parsedDate.getHours()).padStart(2, '0');
-                                                    const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
-                                                    return <span>{`${day}.${month}.${year} ${hours}:${minutes}`}</span>;
-                                                })() : <span className="text-gray-400 italic">—</span>
+                                            ) : col.key === 'employee_name' ? (
+                                                row[col.key] ? (
+                                                    <span className="font-medium">{formatFIO(row[col.key])}</span>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">—</span>
+                                                )
                                             ) : (
-                                                String(row[col.key] || '—')
+                                                <span className={col.key === 'data' ? "font-medium" : ""}>
+                                                    {String(row[col.key] || '—')}
+                                                </span>
                                             )}
                                         </td>
                                     ))}
