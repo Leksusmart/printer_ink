@@ -11,3 +11,4 @@ frontend/admin/node_modules/
 /backend/test/
 /frontend/android
 capacitor.config.ts
+tailwind.extension.json

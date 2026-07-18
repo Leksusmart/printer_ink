@@ -1,4 +1,6 @@
 const API_BASE = `${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin`;
+// Некоторые эндпоинты не находятся под /admin (например поиск заявок по GUID картриджа)
+const ROOT_API_BASE = `${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}`;
 
 export const adminApi = {
     async getStats() {
@@ -80,6 +82,18 @@ export const adminApi = {
     async getIssuanceRequests() {
         const res = await fetch(`${API_BASE}/issuance`);
         if (!res.ok) throw new Error('Ошибка загрузки заявок на получение');
+        return res.json();
+    },
+
+    async getCartridges() {
+        const res = await fetch(`${API_BASE}/cartridges`);
+        if (!res.ok) throw new Error('Ошибка загрузки картриджей');
+        return res.json();
+    },
+
+    async getRequestsByGuid(guid: string) {
+        const res = await fetch(`${ROOT_API_BASE}/requests/history?guid=${encodeURIComponent(guid)}`);
+        if (!res.ok) throw new Error('Ошибка загрузки заявок по картриджу');
         return res.json();
     },
 

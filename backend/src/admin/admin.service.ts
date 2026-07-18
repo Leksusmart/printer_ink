@@ -141,6 +141,25 @@ export class AdminService {
         return result.rows;
     }
 
+    // Список всех картриджей со всеми параметрами — для админской вкладки "Картриджи"
+    async getCartridges() {
+        const query = `
+            SELECT 
+                c.id,
+                c.guid,
+                c.model,
+                c.status,
+                c.isdefective,
+                le.fullname as lastchangeby_name,
+                TO_CHAR(c.lastchangedata, 'DD.MM.YY HH:MI') as lastchangedata
+            FROM public.cartridges c
+            LEFT JOIN public.employers le ON c.lastchangeby = le.id
+            ORDER BY c.id DESC
+        `;
+        const result = await this.databaseService.query(query);
+        return result.rows;
+    }
+
     // Список картриджей (модель + GUID) для конкретной заявки — для кнопки "Подробнее"
     async getCartridgesForRequest(requestId: number) {
         const query = `

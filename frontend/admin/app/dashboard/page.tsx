@@ -10,6 +10,7 @@ import CartridgeModal from './components/CartridgeModal';
 import ScrapModal from './components/ScrapModal';
 import SettingsModal from './components/SettingsModal';
 import RequestsTable from './components/RequestsTable';
+import CartridgesTable from './components/CartridgesTable';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -26,31 +27,49 @@ export default function DashboardPage() {
     const [receivingData, setReceivingData] = useState<any[]>([]);
     const [scrapData, setScrapData] = useState<any[]>([]);
     const [issuanceData, setIssuanceData] = useState<any[]>([]);
+    const [cartridgesData, setCartridgesData] = useState<any[]>([]);
 
     const [settings, setSettings] = useState({ refillthreshold: 10, rowscollapsedlimit: 5 });
 
     const fetchAllData = async () => {
-        try {
-            const [statsData, history, refillRepair, receiving, scrap, issuance, settingsData] = await Promise.all([
+        // Promise.allSettled — в отличие от Promise.all, паление одного запроса
+        // (например, эндпоинт картриджей ещё не готов на бэкенде) не блокирует
+        // загрузку остальных данных панели.
+        const [statsRes, historyRes, refillRepairRes, receivingRes, scrapRes, issuanceRes, cartridgesRes, settingsRes] =
+            await Promise.allSettled([
                 adminApi.getStats(),
                 adminApi.getHistory(),
                 adminApi.getRefillRepairRequests(),
                 adminApi.getReceivingRequests(),
                 adminApi.getScrapRequests(),
                 adminApi.getIssuanceRequests(),
+                adminApi.getCartridges(),
                 adminApi.getSettings()
             ]);
 
-            setStats(statsData);
-            setHistoryData(history || []);
-            setRefillRepairData(refillRepair || []);
-            setReceivingData(receiving || []);
-            setScrapData(scrap || []);
-            setIssuanceData(issuance || []);
-            setSettings(settingsData);
-        } catch (err) {
-            console.error('Ошибка загрузки данных:', err);
-        }
+        if (statsRes.status === 'fulfilled') setStats(statsRes.value);
+        else console.error('Ошибка загрузки статистики:', statsRes.reason);
+
+        if (historyRes.status === 'fulfilled') setHistoryData(historyRes.value || []);
+        else console.error('Ошибка загрузки истории:', historyRes.reason);
+
+        if (refillRepairRes.status === 'fulfilled') setRefillRepairData(refillRepairRes.value || []);
+        else console.error('Ошибка загрузки заявок на заправку/ремонт:', refillRepairRes.reason);
+
+        if (receivingRes.status === 'fulfilled') setReceivingData(receivingRes.value || []);
+        else console.error('Ошибка загрузки заявок на приёмку:', receivingRes.reason);
+
+        if (scrapRes.status === 'fulfilled') setScrapData(scrapRes.value || []);
+        else console.error('Ошибка загрузки заявок на списание:', scrapRes.reason);
+
+        if (issuanceRes.status === 'fulfilled') setIssuanceData(issuanceRes.value || []);
+        else console.error('Ошибка загрузки заявок на получение:', issuanceRes.reason);
+
+        if (cartridgesRes.status === 'fulfilled') setCartridgesData(cartridgesRes.value || []);
+        else console.error('Ошибка загрузки картриджей:', cartridgesRes.reason);
+
+        if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value);
+        else console.error('Ошибка загрузки настроек:', settingsRes.reason);
     };
     const checkSession = async (userPhone: string): Promise<boolean> => {
         try {
@@ -113,28 +132,35 @@ export default function DashboardPage() {
                 {/* Вкладки */}
                 <div className="flex gap-1 border-b border-gray-200 bg-gray-50 px-6 pt-6 pb-4">
                     {[
-                        '📋 История абсолютно всех заявок',
-                        '⚡ Заявки на заправку/ремонт',
-                        '📥 Заявки на приёмку',
-                        '📤 Заявки на получение',
-                        '🗑️ Заявки на списание',
-                    ].map((tabTitle, index) => {
+                        { title: '📋 История абсолютно всех заявок' },
+                        { title: '⚡ Заявки на заправку/ремонт' },
+                        { title: '📥 Заявки на приёмку' },
+                        { title: '📤 Заявки на получение' },
+                        { title: '🗑️ Заявки на списание' },
+                        { title: '🖨️ Картриджи', highlight: true },
+                    ].map((tab, index) => {
                         const isActive = activeTableTab === index;
+
                         return (
                             <button
                                 key={index}
                                 type="button"
                                 onClick={() => setActiveTableTab(index)}
                                 className={`px-6 py-3 text-sm font-medium rounded-t-2xl transition-all ${isActive
-                                    ? 'bg-white text-blue-600 border border-gray-200 border-b-white -mb-px shadow-sm'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 border border-transparent'
+                                        ? tab.highlight
+                                            ? 'bg-white text-indigo-600 border border-indigo-200 border-b-white -mb-px shadow-sm'
+                                            : 'bg-white text-blue-600 border border-gray-200 border-b-white -mb-px shadow-sm'
+                                        : tab.highlight
+                                            ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 border border-transparent'
                                     }`}
                             >
-                                {tabTitle}
+                                {tab.title}
                             </button>
                         );
                     })}
                 </div>
+
 
                 {/* Содержимое таблицы */}
                 <div className="p-6">
@@ -182,6 +208,12 @@ export default function DashboardPage() {
                         />
                     )}
 
+                    {activeTableTab === 5 && (
+                        <CartridgesTable
+                            data={cartridgesData}
+                            rowsCollapsedLimit={settings.rowscollapsedlimit}
+                        />
+                    )}
                 </div>
             </div>
 

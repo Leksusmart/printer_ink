@@ -423,7 +423,15 @@ function DashboardContent() {
                     if (!res.ok) throw new Error(`Ошибка сервера: ${res.status}`);
                     const result = await res.json();
 
-                    if (result.success && Array.isArray(result.GUIDs) && result.GUIDs.length > 0) {
+                    // ⚠️ result.GUIDs содержит GUID-ы ТОЛЬКО новых (вручную созданных) картриджей.
+                    // Если заявка составлена целиком из уже существующих GUID, GUIDs будет пустым
+                    // массивом при success: true — это не ошибка, поэтому раньше проверять
+                    // result.GUIDs.length > 0 как признак успеха было неверно.
+                    if (!result.success) {
+                        throw new Error(`Ошибка сервера`);
+                    }
+
+                    if (Array.isArray(result.GUIDs) && result.GUIDs.length > 0) {
                         // Распределяем вернувшиеся GUID-ы обратно по моделям из этой группы
                         let guidIndex = 0;
                         manualSource.forEach((item: any) => {
@@ -439,8 +447,6 @@ function DashboardContent() {
                                 }
                             }
                         });
-                    } else {
-                        throw new Error(`Ошибка сервера`);
                     }
                     return result;
                 })
@@ -473,7 +479,7 @@ function DashboardContent() {
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans">
             {/* ТОСТ ПРЕДУПРЕЖДЕНИЯ */}
             {toastMessage && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
                     <div className="rounded bg-gray-900/90 px-5 py-3 text-sm font-medium text-white shadow-lg">
                         {toastMessage}
                     </div>
@@ -492,7 +498,7 @@ function DashboardContent() {
 
             <div className="w-full max-w-xl space-y-4 rounded border border-blue-400 bg-white p-6 shadow-sm">
 
-                <div className="flex items-center justify-between w-full mb-4">
+                <div className="mb-4 flex w-full items-center justify-between">
                     <button
                         type="button"
                         onClick={() => router.push('/')}
