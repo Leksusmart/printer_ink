@@ -25,7 +25,6 @@ export class RequestsService {
         const result = await this.databaseService.query(`
       SELECT *
       FROM public.requests
-      ORDER BY data DESC
     `);
         return result.rows;
     }

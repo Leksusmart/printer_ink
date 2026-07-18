@@ -10,6 +10,8 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsModalProps) {
     const [refillthreshold, setrefillthreshold] = useState(10);
+    const [rowsCollapsedLimit, setRowsCollapsedLimit] = useState(5);
+
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -23,6 +25,7 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
             if (res.ok) {
                 const data = await res.json();
                 setrefillthreshold(data.refillthreshold ?? 10);
+                setRowsCollapsedLimit(data.rowsCollapsedLimit ?? 5);
             }
         } catch (e) {
             console.error(e);
@@ -39,7 +42,8 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    refillthreshold
+                    refillthreshold,
+                    rowsCollapsedLimit
                 })
             });
 
@@ -74,7 +78,7 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
 
                 <form onSubmit={handleSubmit}>                    
                     <div className="mt-8 flex items-center justify-between border-t pt-6">
-                        <label className="font-medium">Порог для заявки на заправку включительно:</label>
+                        <label className="font-medium">Порог уведомления состояния картриджей:</label>
                         <input
                             type="number"
                             value={refillthreshold}
@@ -82,7 +86,16 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
                             className="w-24 text-center border rounded-lg px-4 py-2 text-lg font-semibold"
                         />
                     </div>
-
+                    <div className="mt-4 flex items-center justify-between border-t pt-6">
+                        <label className="font-medium">Лимит строк в свернутой таблице:</label>
+                        <input
+                            type="number"
+                            value={rowsCollapsedLimit}
+                            onChange={(e) => setRowsCollapsedLimit(Number(e.target.value))}
+                            className="w-24 text-center border rounded-lg px-4 py-2 text-lg font-semibold"
+                            min="1"
+                        />
+                    </div>
                     <button
                         type="submit"
                         disabled={loading}

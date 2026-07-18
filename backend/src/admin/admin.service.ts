@@ -71,15 +71,24 @@ export class AdminService {
 		e.fullname as employee_name, r.type, r.status,
 		COUNT(rl.cartridgeid)::int as cartridges_count,
 		r.isdefective, COALESCE(r.comment, '') as comment,
-		COALESCE(le.fullname, 'Не менялся') as lastchangeby_name,
+		le.fullname as lastchangeby_name,
 		TO_CHAR(r.lastchangedata, 'DD.MM.YY HH:MI') as lastchangedata
 	  FROM public.requests r
 	  LEFT JOIN public.employers e ON r.employee = e.id
 	  LEFT JOIN public.requestslist rl ON r.id = rl.requestid
 	  LEFT JOIN public.employers le ON r.lastchangeby = le.id
 	  ${whereClause}
-	  GROUP BY r.id, e.fullname, le.fullname
-	  ORDER BY r.data DESC
+	  GROUP BY 
+        r.id, 
+        r.data, 
+        e.fullname, 
+        r.type, 
+        r.status, 
+        r.isdefective, 
+        r.comment, 
+        le.fullname, 
+        r.lastchangedata
+      ORDER BY r.data DESC
 	`;
     }
 
@@ -189,23 +198,22 @@ export class AdminService {
     async getSettings() {
         const result = await this.databaseService.query(`SELECT * FROM public.dashboard_settings WHERE id = 1`);
         if (result.rows.length === 0) {
-            return {
-                refillthreshold: 10
-            };
+            return { refillthreshold: 10, rowsCollapsedLimit: 3 };  // ← default
         }
         return result.rows[0];
     }
 
     async updateSettings(settings: any) {
         const result = await this.databaseService.query(`
-	  UPDATE public.dashboard_settings 
-	  SET 
-		  refillthreshold = $1
-	  WHERE id = 1
-      RETURNING refillthreshold`,
-            [settings.refillthreshold]
+      UPDATE public.dashboard_settings 
+      SET 
+          refillthreshold = $1,
+          rowsCollapsedLimit = $2
+      WHERE id = 1
+      RETURNING *`,
+            [settings.refillthreshold, settings.rowsCollapsedLimit]
         );
-        if (result.rows[0].refillTreshold != settings.refillthreshold)
+        if (result.rows[0].refillTreshold != settings.refillthreshold || result.rows[0].rowsCollapsedLimit != settings.rowsCollapsedLimit)
         {
             return { success: false };
         }

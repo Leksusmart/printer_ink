@@ -26,12 +26,12 @@ interface RequestsTableProps {
     showType?: boolean;
     showStatus?: boolean;
     showDefect?: boolean;
+    rowsCollapsedLimit?: number;
 }
 
-const ROWS_COLLAPSED_LIMIT = 3;
 type SortableKey = keyof AdminRequestRow;
 
-export default function RequestsTable({ title, data, showType, showStatus, showDefect }: RequestsTableProps) {
+export default function RequestsTable({ title, data, showType, showDefect, rowsCollapsedLimit = 5 }: RequestsTableProps) {
     const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'asc' | 'desc' } | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [openFilterMenu, setOpenFilterMenu] = useState<SortableKey | null>(null);
@@ -131,11 +131,13 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
         { key: 'comment', label: 'Комментарий' },
     ];
 
+    const limit = rowsCollapsedLimit
+
     const visibleItems = isExpanded
         ? filteredAndSortedItems
-        : filteredAndSortedItems.slice(0, ROWS_COLLAPSED_LIMIT);
+        : filteredAndSortedItems.slice(0, limit);
 
-    const hasMoreRows = filteredAndSortedItems.length > ROWS_COLLAPSED_LIMIT;
+    const hasMoreRows = filteredAndSortedItems.length > limit;
 
     return (
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">

@@ -18,7 +18,6 @@ export class EmployersService {
     const result = await this.databaseService.query(`
       SELECT *
       FROM public.employers
-      ORDER BY phone
     `);
     return result.rows;
   }

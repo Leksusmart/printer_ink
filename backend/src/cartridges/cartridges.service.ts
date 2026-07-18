@@ -19,7 +19,6 @@ export class CartridgesService {
         const result = await this.databaseService.query(`
       SELECT *
       FROM public.cartridges
-      ORDER BY lastchangedata DESC
     `);
 
         return result.rows;

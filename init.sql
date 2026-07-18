@@ -68,7 +68,7 @@ CREATE TABLE public.requests (
     type character varying(20) NOT NULL,
 	isDefective bool,
     status character varying(20),
-    lastchangedata timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
+    data timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
     employee integer,
     lastchangedata timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
     lastchangeby integer,
@@ -121,11 +121,12 @@ ALTER TABLE ONLY public.requestslist ALTER COLUMN id SET DEFAULT nextval('public
 CREATE TABLE public.dashboard_settings (
     id integer PRIMARY KEY DEFAULT 1,
     refillThreshold integer DEFAULT 10,
-    CONSTRAINT single_row CHECK (id = 1) -- Гарантирует, что строка в таблице будет всегда только одна
+    rowsCollapsedLimit integer DEFAULT 5,
+    CONSTRAINT single_row CHECK (id = 1)
 );
 
-COPY public.dashboard_settings (id, refillThreshold) FROM stdin;
-1	10
+COPY public.dashboard_settings (id, refillThreshold, rowsCollapsedLimit) FROM stdin;
+1	10	5
 \.
 
 COPY public.employers (id, phone, fullname, role, password) FROM stdin;
@@ -133,7 +134,10 @@ COPY public.employers (id, phone, fullname, role, password) FROM stdin;
 \.
 
 
+SELECT pg_catalog.setval('public.cartridges_id_seq', 0, true);
 SELECT pg_catalog.setval('public.employers_id_seq', 1, true);
+SELECT pg_catalog.setval('public.requests_id_seq', 0, true);
+SELECT pg_catalog.setval('public.requestslist_id_seq', 0, true);
 
 ALTER TABLE ONLY public.cartridges
     ADD CONSTRAINT cartridges_guid_key UNIQUE (guid);
