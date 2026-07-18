@@ -3,18 +3,57 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const formatPhoneNumber = (value: string): string => {
+    if (!value) return value;
+
+    const phoneNumber = value.replace(/[^\d]/g, '');
+    const phoneNumberLength = phoneNumber.length;
+
+    if (phoneNumberLength === 0) return '';
+
+    let firstDigit = '+7';
+    if (phoneNumber[0] === '8') firstDigit = '+7';
+
+    if (phoneNumberLength <= 1) {
+        return firstDigit;
+    }
+    if (phoneNumberLength <= 4) {
+        return `${firstDigit} (${phoneNumber.slice(1)}`;
+    }
+    if (phoneNumberLength <= 7) {
+        return `${firstDigit} (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4)}`;
+    }
+    if (phoneNumberLength <= 9) {
+        return `${firstDigit} (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4, 7)}-${phoneNumber.slice(7)}`;
+    }
+    return `${firstDigit} (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4, 7)}-${phoneNumber.slice(7, 9)}-${phoneNumber.slice(9, 11)}`;
+};
+
 export default function AdminLoginPage() {
     const [phone, setPhone] = useState('');
-    const [password, setPassword] = useState(''); // Новое состояние для пароля
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter();
 
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formattedValue = formatPhoneNumber(e.target.value);
+        setPhone(formattedValue);
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (phone.length < 18) {
+            setError('Ошибка: Введите полный номер телефона');
+            return;
+        }
+
         setError('');
         setIsLoading(true);
+
+        const cleanPhone = '+7' + phone.replace(/[^\d]/g, '').slice(1);
 
         try {
             // Отправляем POST запрос на эндпоинт авторизации админа
@@ -24,7 +63,7 @@ export default function AdminLoginPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    phone: phone,
+                    phone: cleanPhone,
                     password: password
                 }),
             });
@@ -74,11 +113,12 @@ export default function AdminLoginPage() {
                     <input
                         id="phone"
                         type="tel"
-                        placeholder="89008000010"
+                        placeholder="+7 (999) 999-99-99"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        disabled={isLoading}
+                        onChange={handlePhoneChange}
+                        maxLength={18}
                         required
+                        disabled={isLoading}
                         className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-slate-800 disabled:text-slate-500"
                     />
                 </div>
