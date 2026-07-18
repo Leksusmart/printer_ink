@@ -195,13 +195,21 @@ export class AdminService {
         return result.guid;
     }
 
-    async getSettings() {
-        const result = await this.databaseService.query(`SELECT * FROM public.dashboard_settings WHERE id = 1`);
-        if (result.rows.length === 0) {
-            return { refillthreshold: 10, rowsCollapsedLimit: 3 };  // ← default
+    async getSettings(id = 1) {
+        try {
+            const queryText = 'SELECT refillthreshold, rowscollapsedlimit FROM public.dashboard_settings WHERE id = $1';
+            const { rows } = await this.databaseService.query(queryText, [id]);
+
+            if (rows.length === 0) {
+                throw new Error(`Ошибка при получении настроек дашборда. Таблица пуста!`);
+            }
+
+            return rows[0];
+        } catch (error) {
+            throw new Error(`Ошибка при получении настроек дашборда: ${error.message}`);
         }
-        return result.rows[0];
     }
+
 
     async updateSettings(settings: any) {
         const result = await this.databaseService.query(`
@@ -213,10 +221,11 @@ export class AdminService {
       RETURNING *`,
             [settings.refillthreshold, settings.rowsCollapsedLimit]
         );
-        if (result.rows[0].refillTreshold != settings.refillthreshold || result.rows[0].rowsCollapsedLimit != settings.rowsCollapsedLimit)
-        {
-            return { success: false };
-        }
-        return { success: true };
+        const updated = result.rows[0];
+        const success =
+            updated.refillthreshold == settings.refillthreshold &&
+            updated.rowsCollapsedLimit == settings.rowsCollapsedLimit;
+
+        return { success };
     }
 }

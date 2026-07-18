@@ -21,11 +21,13 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
 
     const loadSettings = async () => {
         try {
-            const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/admin-login`);
+            const res = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin/settings`);
             if (res.ok) {
                 const data = await res.json();
                 setrefillthreshold(data.refillthreshold ?? 10);
-                setRowsCollapsedLimit(data.rowsCollapsedLimit ?? 5);
+                setRowsCollapsedLimit(data.rowscollapsedlimit ?? 5);
+            } else {
+                throw new Error('Ошибка получения настроек');
             }
         } catch (e) {
             console.error(e);

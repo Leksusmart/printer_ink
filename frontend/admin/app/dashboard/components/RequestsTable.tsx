@@ -31,7 +31,7 @@ interface RequestsTableProps {
 
 type SortableKey = keyof AdminRequestRow;
 
-export default function RequestsTable({ title, data, showType, showDefect, rowsCollapsedLimit = 5 }: RequestsTableProps) {
+export default function RequestsTable({ title, data, showType, showDefect, rowsCollapsedLimit }: RequestsTableProps) {
     const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'asc' | 'desc' } | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [openFilterMenu, setOpenFilterMenu] = useState<SortableKey | null>(null);
@@ -131,7 +131,7 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
         { key: 'comment', label: 'Комментарий' },
     ];
 
-    const limit = rowsCollapsedLimit
+    const limit = rowsCollapsedLimit ?? 5;
 
     const visibleItems = isExpanded
         ? filteredAndSortedItems

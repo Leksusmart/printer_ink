@@ -27,17 +27,18 @@ export default function DashboardPage() {
     const [scrapData, setScrapData] = useState<any[]>([]);
     const [issuanceData, setIssuanceData] = useState<any[]>([]);
 
-    const [settings, setSettings] = useState({ refillthreshold: 10, rowsCollapsedLimit: 3 });
+    const [settings, setSettings] = useState({ refillthreshold: 10, rowscollapsedlimit: 5 });
 
     const fetchAllData = async () => {
         try {
-            const [statsData, history, refillRepair, receiving, scrap, issuance] = await Promise.all([
+            const [statsData, history, refillRepair, receiving, scrap, issuance, settingsData] = await Promise.all([
                 adminApi.getStats(),
                 adminApi.getHistory(),
                 adminApi.getRefillRepairRequests(),
                 adminApi.getReceivingRequests(),
                 adminApi.getScrapRequests(),
-                adminApi.getIssuanceRequests()
+                adminApi.getIssuanceRequests(),
+                adminApi.getSettings()
             ]);
 
             setStats(statsData);
@@ -46,7 +47,6 @@ export default function DashboardPage() {
             setReceivingData(receiving || []);
             setScrapData(scrap || []);
             setIssuanceData(issuance || []);
-            const settingsData = await adminApi.getSettings(); // добавьте вызов
             setSettings(settingsData);
         } catch (err) {
             console.error('Ошибка загрузки данных:', err);
@@ -145,7 +145,7 @@ export default function DashboardPage() {
                             showType
                             showStatus
                             showDefect
-                            rowsCollapsedLimit={settings.rowsCollapsedLimit}
+                            rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
                     )}
 
@@ -153,7 +153,7 @@ export default function DashboardPage() {
                         <RequestsTable
                             title="⚡ Заявки на заправку/ремонт"
                             data={refillRepairData}
-                            rowsCollapsedLimit={settings.rowsCollapsedLimit}
+                            rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
                     )}
 
@@ -162,7 +162,7 @@ export default function DashboardPage() {
                             title="📥 Заявки на приёмку"
                             data={receivingData}
                             showDefect
-                            rowsCollapsedLimit={settings.rowsCollapsedLimit}
+                            rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
                     )}
 
@@ -170,7 +170,7 @@ export default function DashboardPage() {
                         <RequestsTable
                             title="🗑️ Заявки на списание"
                             data={scrapData}
-                            rowsCollapsedLimit={settings.rowsCollapsedLimit}
+                            rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
                     )}
 
@@ -178,7 +178,7 @@ export default function DashboardPage() {
                         <RequestsTable
                             title="📤 Заявки на получение"
                             data={issuanceData}
-                            rowsCollapsedLimit={settings.rowsCollapsedLimit}
+                            rowsCollapsedLimit={settings.rowscollapsedlimit}
                         />
                     )}
                 </div>
