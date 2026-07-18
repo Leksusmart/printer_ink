@@ -132,13 +132,8 @@ COPY public.employers (id, phone, fullname, role, password) FROM stdin;
 1	+79991112233	Иванов Иван Иванович	Admin	$2b$10$vn6tNBc5qvNrYMJtxCkEe.i0H6vv79gVmZO58U3Zo73gNh2pI3vFi
 \.
 
-SELECT pg_catalog.setval('public.cartridges_id_seq', 5, true);
 
-SELECT pg_catalog.setval('public.employers_id_seq', 5, true);
-
-SELECT pg_catalog.setval('public.requests_id_seq', 5, true);
-
-SELECT pg_catalog.setval('public.requestslist_id_seq', 5, true);
+SELECT pg_catalog.setval('public.employers_id_seq', 1, true);
 
 ALTER TABLE ONLY public.cartridges
     ADD CONSTRAINT cartridges_guid_key UNIQUE (guid);

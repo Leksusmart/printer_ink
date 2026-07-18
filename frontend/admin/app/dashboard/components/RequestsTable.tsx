@@ -1,6 +1,5 @@
 'use client';
-
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { adminApi } from '../../api/adminApi';
 
 interface AdminRequestRow {
@@ -30,12 +29,18 @@ interface RequestsTableProps {
 }
 
 const ROWS_COLLAPSED_LIMIT = 3;
-
 type SortableKey = keyof AdminRequestRow;
 
 export default function RequestsTable({ title, data, showType, showStatus, showDefect }: RequestsTableProps) {
     const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'asc' | 'desc' } | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [openFilterMenu, setOpenFilterMenu] = useState<SortableKey | null>(null);
+
+    const [filters, setFilters] = useState<{
+        employee_name?: string;
+        type?: string;
+        isdefective?: boolean;
+    }>({});
 
     const [cartridgeDetailsModal, setCartridgeDetailsModal] = useState<{
         isOpen: boolean;
@@ -60,17 +65,41 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
         setCartridgeDetailsModal({ isOpen: false, requestId: null, isLoading: false, error: '', items: [] });
     };
 
-    const sortedItems = [...data].sort((a, b) => {
-        if (!sortConfig) return 0;
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-    });
+    const uniqueValues = useMemo(() => {
+        const employees = [...new Set(data.map(item => item.employee_name).filter(Boolean))].sort();
+        const types = [...new Set(data.map(item => item.type).filter(Boolean))].sort();
+        return { employees, types };
+    }, [data]);
 
-    const visibleItems = isExpanded ? sortedItems : sortedItems.slice(0, ROWS_COLLAPSED_LIMIT);
-    const hasMoreRows = sortedItems.length > ROWS_COLLAPSED_LIMIT;
+    // Применяем фильтры + сортировку
+    const filteredAndSortedItems = useMemo(() => {
+        let result = [...data];
+
+        // Применяем фильтры
+        if (filters.employee_name) {
+            result = result.filter(item => item.employee_name === filters.employee_name);
+        }
+        if (filters.type) {
+            result = result.filter(item => item.type === filters.type);
+        }
+        if (filters.isdefective !== undefined) {
+            result = result.filter(item => item.isdefective === filters.isdefective);
+        }
+
+        // Сортировка
+        if (sortConfig) {
+            result.sort((a, b) => {
+                const aValue = a[sortConfig.key];
+                const bValue = b[sortConfig.key];
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return result;
+    }, [data, filters, sortConfig]);
+
 
     const requestSort = (key: SortableKey) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -79,6 +108,18 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
         }
         setSortConfig({ key, direction });
     };
+
+    const setFilter = (key: keyof typeof filters, value: any) => {
+        setFilters(prev => ({ ...prev, [key]: value }));
+        setOpenFilterMenu(null);
+    };
+
+    const clearFilter = (key: keyof typeof filters) => {
+        setFilters(prev => ({ ...prev, [key]: undefined }));
+        setOpenFilterMenu(null);
+    };
+
+    const columnsWithFilter: SortableKey[] = ['employee_name', 'type', 'isdefective'];
 
     const columns: { key: SortableKey; label: string }[] = [
         { key: 'id', label: '№' },
@@ -89,6 +130,12 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
         ...(showDefect ? [{ key: 'isdefective' as SortableKey, label: 'Дефект' }] : []),
         { key: 'comment', label: 'Комментарий' },
     ];
+
+    const visibleItems = isExpanded
+        ? filteredAndSortedItems
+        : filteredAndSortedItems.slice(0, ROWS_COLLAPSED_LIMIT);
+
+    const hasMoreRows = filteredAndSortedItems.length > ROWS_COLLAPSED_LIMIT;
 
     return (
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -108,27 +155,106 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
                 <table className="w-full border-collapse text-left text-base">
                     <thead className="border-b border-gray-200 bg-gray-50 text-sm font-semibold tracking-wider text-gray-700 uppercase">
                         <tr>
-                            {columns.map((col) => (
-                                <th
-                                    key={col.key}
-                                    onClick={() => requestSort(col.key)}
-                                    className="px-5 py-4 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap"
-                                >
-                                    <div className="flex items-center gap-1">
-                                        {col.label}
-                                        <span className="text-xs text-gray-400">
-                                            {sortConfig?.key === col.key ? (sortConfig.direction === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
-                                        </span>
-                                    </div>
-                                </th>
-                            ))}
+                            {columns.map((col) => {
+                                const hasFilter = columnsWithFilter.includes(col.key);
+                                const currentFilter = col.key === 'employee_name' ? filters.employee_name :
+                                    col.key === 'type' ? filters.type :
+                                        col.key === 'isdefective' ? filters.isdefective : undefined;
+
+                                const isSorted = sortConfig?.key === col.key;
+
+                                return (
+                                    <th
+                                        key={col.key}
+                                        className="relative px-5 py-4 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap"
+                                        onClick={() => {
+                                            if (hasFilter) {
+                                                setOpenFilterMenu(openFilterMenu === col.key ? null : col.key);
+                                            } else {
+                                                requestSort(col.key);
+                                            }
+                                        }}
+                                    >
+                                        <div className="flex items-center justify-between w-full">
+                                            <div className="flex items-center gap-1">
+                                                {col.label}
+                                                {currentFilter !== undefined && <span className="text-blue-600 text-xs">●</span>}
+                                            </div>
+
+                                            {hasFilter ? (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOpenFilterMenu(openFilterMenu === col.key ? null : col.key);
+                                                    }}
+                                                    className="text-gray-400 hover:text-gray-600 text-xs ml-2"
+                                                >
+                                                    ▼
+                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">
+                                                    {isSorted ? (sortConfig!.direction === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {hasFilter && openFilterMenu === col.key && (
+                                            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px] max-h-[320px] overflow-auto"><div
+                                                className="px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-500"
+                                                onClick={() => clearFilter(col.key as keyof typeof filters)}
+                                            >
+                                                Все значения
+                                            </div>
+
+                                                {col.key === 'employee_name' && uniqueValues.employees.map(name => (
+                                                    <div
+                                                        key={name}
+                                                        className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${filters.employee_name === name ? 'bg-blue-50 text-blue-700' : ''}`}
+                                                        onClick={() => setFilter('employee_name', name)}
+                                                    >
+                                                        {name}
+                                                    </div>
+                                                ))}
+
+                                                {col.key === 'type' && uniqueValues.types.map(t => (
+                                                    <div
+                                                        key={t}
+                                                        className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${filters.type === t ? 'bg-blue-50 text-blue-700' : ''}`}
+                                                        onClick={() => setFilter('type', t)}
+                                                    >
+                                                        {t}
+                                                    </div>
+                                                ))}
+
+                                                {col.key === 'isdefective' && (
+                                                    <>
+                                                        <div
+                                                            className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${filters.isdefective === true ? 'bg-blue-50 text-blue-700' : ''}`}
+                                                            onClick={() => setFilter('isdefective', true)}
+                                                        >
+                                                            Брак
+                                                        </div>
+                                                        <div
+                                                            className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${filters.isdefective === false ? 'bg-blue-50 text-blue-700' : ''}`}
+                                                            onClick={() => setFilter('isdefective', false)}
+                                                        >
+                                                            Нет
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+
+                                    </th>
+                                );
+                            })}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-[15px] text-gray-700">
-                        {sortedItems.length === 0 ? (
+                        {filteredAndSortedItems.length === 0 ? (
                             <tr>
                                 <td colSpan={columns.length} className="py-12 text-center text-base text-gray-400">
-                                    Нет заявок в данной категории
+                                    Нет заявок по выбранным фильтрам
                                 </td>
                             </tr>
                         ) : (
@@ -150,7 +276,7 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
                                                     </button>
                                                 </div>
                                             ) : col.key === 'isdefective' ? (
-                                                row[col.key] ? (
+                                                row.isdefective ? (
                                                     <span className="rounded bg-red-100 px-3 py-1 text-sm font-medium text-red-700">Брак</span>
                                                 ) : (
                                                     <span className="rounded bg-green-100 px-3 py-1 text-sm font-medium text-green-700">Нет</span>
@@ -160,36 +286,19 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
                                                     {row.status}
                                                 </span>
                                             ) : col.key === 'employee_name' || col.key === 'lastchangeby_name' ? (
-                                                row[col.key] ? (
-                                                    <span className="font-medium">{row[col.key]}</span>
-                                                ) : (
-                                                    <span className="text-gray-400 italic">—</span>
-                                                )
+                                                row[col.key] ? <span className="font-medium">{row[col.key]}</span> : <span className="text-gray-400 italic">—</span>
                                             ) : (col.key === 'data' || col.key === 'lastchangedata') ? (
                                                 row[col.key] ? (() => {
                                                     const parsedDate = new Date(String(row[col.key]));
-
-                                                    // Если дата не валидна — выводим как есть
-                                                    if (isNaN(parsedDate.getTime())) {
-                                                        return <span>{String(row[col.key])}</span>;
-                                                    }
-
-                                                    // Вручную достаем компоненты даты (они автоматически берутся по локальному времени компьютера)
+                                                    if (isNaN(parsedDate.getTime())) return <span>{String(row[col.key])}</span>;
                                                     const day = String(parsedDate.getDate()).padStart(2, '0');
                                                     const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-                                                    const year = String(parsedDate.getFullYear()).slice(-2); // Берем последние 2 цифры года
-
-                                                    // ВНИМАНИЕ: getHours() вернет честные 24 часа (например, 14 вместо 02)
+                                                    const year = String(parsedDate.getFullYear()).slice(-2);
                                                     const hours = String(parsedDate.getHours()).padStart(2, '0');
                                                     const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
-
-                                                    // Собираем идеальную строку: "17.07.26 14:02"
                                                     return <span>{`${day}.${month}.${year} ${hours}:${minutes}`}</span>;
-                                                })() : (
-                                                    <span className="text-gray-400 italic">—</span>
-                                                )
+                                                })() : <span className="text-gray-400 italic">—</span>
                                             ) : (
-                                                // Стандартный вывод для всех остальных текстовых полей
                                                 String(row[col.key] || '—')
                                             )}
                                         </td>
@@ -227,7 +336,6 @@ export default function RequestsTable({ title, data, showType, showStatus, showD
                                 ×
                             </button>
                         </div>
-
                         {cartridgeDetailsModal.isLoading ? (
                             <div className="py-12 text-center text-gray-500">Загрузка картриджей...</div>
                         ) : cartridgeDetailsModal.error ? (
