@@ -41,7 +41,10 @@ export class AdminController {
         const generatedGuid = await this.adminService.getNewGUID();
         return { guid: generatedGuid };
     }
-
+    @Get('cartridges')
+    async getCartridges() {
+        return this.adminService.getCartridges();
+    }
     @Post('create-cartridge')
     async createCartridge(@Body() body: { model: string; guid: string; status: string; isdefective: boolean; adminId: number | null, comment: string }) {
         return this.adminService.createCartridge(body.model, body.guid, body.status, body.isdefective, body.adminId, body.comment);

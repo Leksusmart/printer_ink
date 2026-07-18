@@ -44,6 +44,34 @@ export class RequestsService {
 
         return result.rows[0];
     }
+    // Все заявки, к которым был привязан картридж с данным GUID — для истории картриджа в админке.
+    // В отличие от findRequestByGuid, возвращает массив (может быть пустым, без исключений)
+    // и сразу отдаёт человекочитаемые имена/даты, как getBaseRequestQuery в AdminService.
+    async findRequestsByGuid(guid: string): Promise<any[]> {
+        const cartridge = await this.cartridgesService.findByGuid(guid);
+        if (!cartridge) return [];
+
+        const result = await this.databaseService.query(`
+        SELECT 
+            r.id,
+            TO_CHAR(r.data, 'DD.MM.YY HH:MI') as data,
+            e.fullname as employee_name,
+            r.type,
+            r.status,
+            r.isdefective,
+            COALESCE(r.comment, '') as comment,
+            le.fullname as lastchangeby_name,
+            TO_CHAR(r.lastchangedata, 'DD.MM.YY HH:MI') as lastchangedata
+        FROM public.requests r
+        JOIN public.requestslist rl ON r.id = rl.requestid
+        LEFT JOIN public.employers e ON r.employee = e.id
+        LEFT JOIN public.employers le ON r.lastchangeby = le.id
+        WHERE rl.cartridgeid = $1
+        ORDER BY r.data DESC
+    `, [cartridge.id]);
+
+        return result.rows;
+    }
 
     async createRequest(data: any): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
@@ -85,17 +113,22 @@ export class RequestsService {
             if (existingGuids.length > 0) {
                 await this.cartridgesService.changeStatusesTo(existingGuids, cartridgeTargetStatus);
 
+                // ⚠️ pg не может выполнить несколько SQL-команд в одном параметризованном запросе —
+                // поэтому INSERT и UPDATE обязательно должны идти отдельными вызовами .query(...).
                 const linkExistingQuery = `
                 INSERT INTO public.requestslist (requestid, cartridgeid)
                 SELECT $1, c.id
                 FROM public.cartridges c
                 WHERE c.guid = ANY($2::text[]);
+            `;
+                await this.databaseService.query(linkExistingQuery, [requestId, existingGuids]);
 
+                const updateCommentQuery = `
                 UPDATE public.cartridges
-                SET comment = $3
+                SET comment = $1
                 WHERE guid = ANY($2::text[]);
             `;
-                await this.databaseService.query(linkExistingQuery, [requestId, existingGuids, comment]);
+                await this.databaseService.query(updateCommentQuery, [comment, existingGuids]);
             }
 
             // 3. Если есть НОВЫЕ картриджи (из ручного ввода) — создаем их и привязываем к этой же заявке

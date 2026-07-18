@@ -15,7 +15,13 @@ export class RequestsController {
     async create(@Body() createRequestDto: CreateRequestDto) {
         return await this.requestsService.createRequest(createRequestDto);
     }
-
+    @Get('history')
+    async getHistoryByGuid(@Query('guid') guid: string) {
+        if (!guid) {
+            throw new BadRequestException('Параметр guid обязателен, Бэк ожидает /requests/history?guid=...');
+        }
+        return this.requestsService.findRequestsByGuid(guid);
+    }
     @Get('search')
     async searchByGuid(@Query('guid') guid: string) {
         if (!guid) {
