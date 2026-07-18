@@ -98,37 +98,38 @@ export class RequestsService {
 
             // 1. Создаем саму заявку в БД
             const insertRequestQuery = `
-            INSERT INTO public.requests 
-                (type, isdefective, status, employee, lastchangeby, comment)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id;
-        `;
+                INSERT INTO public.requests 
+                    (type, isdefective, status, employee, lastchangeby, comment)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id, data;
+            `;
             const requestResult = await this.databaseService.query(insertRequestQuery, [
                 requestType, isRequestDefective, 'Создана', employeeId, employeeId, comment
             ]) as any;
 
             const requestId = requestResult.rows[0].id;
+            const requestData = requestResult.rows[0].data;
 
             // 2. Если есть СУЩЕСТВУЮЩИЕ картриджи — обновляем их статус и привязываем к заявке
             if (existingGuids.length > 0) {
-                await this.cartridgesService.changeStatusesTo(existingGuids, cartridgeTargetStatus);
+                await this.cartridgesService.changeStatusesTo(existingGuids, cartridgeTargetStatus, requestData);
 
-                // ⚠️ pg не может выполнить несколько SQL-команд в одном параметризованном запросе —
-                // поэтому INSERT и UPDATE обязательно должны идти отдельными вызовами .query(...).
                 const linkExistingQuery = `
-                INSERT INTO public.requestslist (requestid, cartridgeid)
-                SELECT $1, c.id
-                FROM public.cartridges c
-                WHERE c.guid = ANY($2::text[]);
-            `;
+                    INSERT INTO public.requestslist (requestid, cartridgeid)
+                    SELECT $1, c.id
+                    FROM public.cartridges c
+                    WHERE c.guid = ANY($2::text[]);
+                `;
                 await this.databaseService.query(linkExistingQuery, [requestId, existingGuids]);
 
-                const updateCommentQuery = `
-                UPDATE public.cartridges
-                SET comment = $1
-                WHERE guid = ANY($2::text[]);
-            `;
-                await this.databaseService.query(updateCommentQuery, [comment, existingGuids]);
+                const updateCartridgesQuery = `
+                    UPDATE public.cartridges
+                    SET comment = $1,
+                        lastchangeby = $2,
+                        lastchangedata = $4
+                    WHERE guid = ANY($3::text[]);
+                `;
+                await this.databaseService.query(updateCartridgesQuery, [comment, employeeId, existingGuids, requestData]);
             }
 
             // 3. Если есть НОВЫЕ картриджи (из ручного ввода) — создаем их и привязываем к этой же заявке
@@ -143,17 +144,19 @@ export class RequestsService {
 
                 allGeneratedGuids = [...allGeneratedGuids, ...generatedGuids];
 
+                // Добавляем поле lastchangedata в список колонок INSERT и передаем $8 параметром
                 const insertNewCartridgesQuery = `
-                WITH inserted_cartridges AS (
-                    INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment)
-                    SELECT $1, u.guid, $2, $3, $4, $5
-                    FROM unnest($6::text[]) AS u(guid)
-                    RETURNING id
-                )
-                INSERT INTO public.requestslist (requestid, cartridgeid)
-                SELECT $7, ic.id
-                FROM inserted_cartridges ic;
-            `;
+                    WITH inserted_cartridges AS (
+                        INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment, lastchangedata)
+                        SELECT $1, u.guid, $2, $3, $4, $5, $8
+                        FROM unnest($6::text[]) AS u(guid)
+                        RETURNING id
+                    )
+                    INSERT INTO public.requestslist (requestid, cartridgeid)
+                    SELECT $7, ic.id
+                    FROM inserted_cartridges ic;
+                `;
+
                 await this.databaseService.query(insertNewCartridgesQuery, [
                     newCartridge.model,
                     cartridgeTargetStatus,
@@ -161,7 +164,8 @@ export class RequestsService {
                     employeeId,
                     comment,
                     generatedGuids,
-                    requestId
+                    requestId,
+                    requestData
                 ]);
             }
 

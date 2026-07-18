@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CartridgesService } from '../cartridges/cartridges.service';
 import * as bcrypt from 'bcrypt';
@@ -160,25 +160,24 @@ export class AdminService {
         return result.rows;
     }
 
-    // Список картриджей (модель + GUID) для конкретной заявки — для кнопки "Подробнее"
     async getCartridgesForRequest(requestId: number) {
         const query = `
         SELECT 
             c.model, 
             c.guid,
             c.status,
+            TO_CHAR(c.lastchangedata, 'DD.MM.YY HH:MI:SS') AS lastchangedata,
             c.comment,
-            r.type
+            r.type,
+            TO_CHAR(r.data, 'DD.MM.YY HH:MI:SS') AS requestdata
         FROM public.requestslist rl
         JOIN public.cartridges c ON rl.cartridgeid = c.id
         JOIN public.requests r ON rl.requestid = r.id
         WHERE rl.requestid = $1;
-    `;
+        `;  
         const result = await this.databaseService.query(query, [requestId]);
         return result.rows;
     }
-
-
 
     async createCartridge(model: string, guid: string, status: string = 'Ожидает заправки', isdefective = false, adminId: number | null, comment: string) {
         if (!model?.trim() || !guid?.trim()) {
@@ -219,6 +218,89 @@ export class AdminService {
 
         return result.rows[0];
     }
+
+    async deleteEmployerById(id: string | number, adminId: string | number, force: boolean = false) {
+        // 1. Ищем удаляемого пользователя
+        const userCheck = await this.databaseService.query(
+            'SELECT id, fullname FROM public.employers WHERE id = $1',
+            [id]
+        );
+
+        if (userCheck.rows.length === 0) {
+            throw new NotFoundException('Пользователь не найден в системе');
+        }
+
+        const username = userCheck.rows[0].fullname;
+
+        // Защита от дурака: нельзя удалить самого себя и переписать логи на себя же
+        if (String(id) === String(adminId)) {
+            throw new BadRequestException('Вы не можете удалить свой собственный аккаунт');
+        }
+
+        // Если перенос ответственности согласован (force === true)
+        if (force) {
+            await this.databaseService.query('BEGIN');
+            try {
+                // Задаем константу времени в часовом поясе Москвы для всей транзакции
+                const moscowTimeQuery = "(CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow')";
+
+                // Обновляем таблицы, используя московское время вместо серверного UTC NOW()
+                await this.databaseService.query(
+                    `UPDATE public.cartridges 
+             SET lastchangeby = $1, lastchangedata = ${moscowTimeQuery} 
+             WHERE lastchangeby = $2`,
+                    [adminId, id]
+                );
+                await this.databaseService.query(
+                    `UPDATE public.requests 
+             SET lastchangeby = $1, lastchangedata = ${moscowTimeQuery} 
+             WHERE lastchangeby = $2`,
+                    [adminId, id]
+                );
+
+                await this.databaseService.query(
+                    `UPDATE public.requests 
+             SET employee = $1, lastchangedata = ${moscowTimeQuery} 
+             WHERE employee = $2`,
+                    [adminId, id]
+                );
+
+                // Окончательно удаляем пользователя
+                await this.databaseService.query('DELETE FROM public.employers WHERE id = $1', [id]);
+
+                await this.databaseService.query('COMMIT');
+                return {
+                    success: true,
+                    message: `Пользователь ${username} успешно удален. Вся ответственность переоформлена на вас.`
+                };
+            } catch (txError: any) {
+                await this.databaseService.query('ROLLBACK');
+                throw new BadRequestException('Ошибка при переносе ответственности и удалении: ' + txError.message);
+            }
+        }
+
+
+        // Попытка обычного удаления (если force === false)
+        try {
+            await this.databaseService.query('DELETE FROM public.employers WHERE id = $1', [id]);
+            return {
+                success: true,
+                message: `Пользователь ${username} успешно удален`
+            };
+        } catch (error: any) {
+            // Проверяем PostgreSQL код ошибки 23503 (foreign_key_violation)
+            if (error.code === '23503') {
+                // Возвращаем специальный ответ, который фронтенд сможет распарсить
+                return {
+                    success: false,
+                    requiresTransfer: true,
+                    message: 'Не удалось удалить пользователя, так как он является ответственным по некоторым заявкам/картриджам.'
+                };
+            }
+            throw new BadRequestException('Не удалось удалить пользователя: ' + error.message);
+        }
+    }
+
 
     async getNewGUID(): Promise<string> {
         const result = await this.databaseService.generateGUID();

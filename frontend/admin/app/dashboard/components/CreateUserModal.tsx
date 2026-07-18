@@ -33,7 +33,7 @@ const formatPhoneNumber = (value: string): string => {
     }
     return `${firstDigit} (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4, 7)}-${phoneNumber.slice(7, 9)}-${phoneNumber.slice(9, 11)}`;
 };
-export default function UserModal({ isOpen, onClose, onSuccess }: UserModalProps) {
+export default function CreateUserModal({ isOpen, onClose, onSuccess }: UserModalProps) {
     const [fullname, setFullname] = useState('');
     const [phone, setPhone] = useState('');
     const [role, setRole] = useState('User');

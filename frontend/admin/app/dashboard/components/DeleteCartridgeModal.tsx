@@ -8,7 +8,7 @@ interface ScrapModalProps {
   onSuccess: () => void;
 }
 
-export default function ScrapModal({ isOpen, onClose, onSuccess }: ScrapModalProps) {
+export default function DeleteCartridgeModal({ isOpen, onClose, onSuccess }: ScrapModalProps) {
   const [guid, setGuid] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');

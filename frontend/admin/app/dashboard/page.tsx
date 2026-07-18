@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { adminApi } from '../api/adminApi';
 
 import DashboardStats from './components/DashboardStats';
-import UserModal from './components/UserModal';
-import CartridgeModal from './components/CartridgeModal';
-import ScrapModal from './components/ScrapModal';
+import CreateUserModal from './components/CreateUserModal';
+import DeleteUserModal from './components/DeleteUserModal';
+import CreateCartridgeModal from './components/CreateCartridgeModal';
+import DeleteCartridgeModal from './components/DeleteCartridgeModal';
 import SettingsModal from './components/SettingsModal';
 import RequestsTable from './components/RequestsTable';
 import CartridgesTable from './components/CartridgesTable';
@@ -15,9 +16,10 @@ import CartridgesTable from './components/CartridgesTable';
 export default function DashboardPage() {
     const router = useRouter();
     const [admin, setAdmin] = useState<any>(null);
-    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-    const [isCartridgeModalOpen, setIsCartridgeModalOpen] = useState(false);
-    const [isScrapModalOpen, setIsScrapModalOpen] = useState(false);
+    const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+    const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
+    const [isCreateCartridgeModalOpen, setIsCreateCartridgeModalOpen] = useState(false);
+    const [isDeleteCartridgeModalOpen, setIsDeleteCartridgeModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
     const [stats, setStats] = useState<any>(null);
@@ -32,9 +34,6 @@ export default function DashboardPage() {
     const [settings, setSettings] = useState({ refillthreshold: 10, rowscollapsedlimit: 5 });
 
     const fetchAllData = async () => {
-        // Promise.allSettled — в отличие от Promise.all, паление одного запроса
-        // (например, эндпоинт картриджей ещё не готов на бэкенде) не блокирует
-        // загрузку остальных данных панели.
         const [statsRes, historyRes, refillRepairRes, receivingRes, scrapRes, issuanceRes, cartridgesRes, settingsRes] =
             await Promise.allSettled([
                 adminApi.getStats(),
@@ -117,12 +116,14 @@ export default function DashboardPage() {
                     <h1 className="text-3xl font-bold">Админ-панель</h1>
                     {admin && <p className="text-gray-600">Добро пожаловать,<br />{admin.fullname}</p>}
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={() => setIsUserModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95">Новый пользователь</button>
-                    <button onClick={() => setIsCartridgeModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95">Новый картридж</button>
-                    <button onClick={() => setIsScrapModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-red-600 rounded-xl font-medium transition-all active:scale-95 flex items-center gap-2">Списать картридж</button>
-                    <button onClick={() => setIsSettingsModalOpen(true)} className="px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95 flex items-center gap-2">Настройки</button>
+                <div className="flex flex-wrap gap-3">
+                    <button onClick={() => setIsCreateUserModalOpen(true)} className="flex-1 min-w-[160px] sm:flex-initial px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95">Новый пользователь</button>
+                    <button onClick={() => setIsDeleteUserModalOpen(true)} className="flex-1 min-w-[160px] sm:flex-initial px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-red-600 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2">Удалить пользователя</button>
+                    <button onClick={() => setIsCreateCartridgeModalOpen(true)} className="flex-1 min-w-[160px] sm:flex-initial px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95">Новый картридж</button>
+                    <button onClick={() => setIsDeleteCartridgeModalOpen(true)} className="flex-1 min-w-[160px] sm:flex-initial px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-red-600 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2">Списать картридж</button>
+                    <button onClick={() => setIsSettingsModalOpen(true)} className="flex-1 min-w-[160px] sm:flex-initial px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2">Настройки</button>
                 </div>
+
             </div>
 
             <DashboardStats stats={stats} />
@@ -217,9 +218,10 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <UserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSuccess={fetchAllData} />
-            <CartridgeModal isOpen={isCartridgeModalOpen} onClose={() => setIsCartridgeModalOpen(false)} onSuccess={fetchAllData} />
-            <ScrapModal isOpen={isScrapModalOpen} onClose={() => setIsScrapModalOpen(false)} onSuccess={fetchAllData} />
+            <CreateUserModal isOpen={isCreateUserModalOpen} onClose={() => setIsCreateUserModalOpen(false)} onSuccess={fetchAllData} />
+            <DeleteUserModal isOpen={isDeleteUserModalOpen} onClose={() => setIsDeleteUserModalOpen(false)} onSuccess={fetchAllData} />
+            <CreateCartridgeModal isOpen={isCreateCartridgeModalOpen} onClose={() => setIsCreateCartridgeModalOpen(false)} onSuccess={fetchAllData} />
+            <DeleteCartridgeModal isOpen={isDeleteCartridgeModalOpen} onClose={() => setIsDeleteCartridgeModalOpen(false)} onSuccess={fetchAllData} />
             <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} onSuccess={fetchAllData} />
         </div>
     );

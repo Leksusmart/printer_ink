@@ -1,5 +1,4 @@
 const API_BASE = `${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/admin`;
-// Некоторые эндпоинты не находятся под /admin (например поиск заявок по GUID картриджа)
 const ROOT_API_BASE = `${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}`;
 
 export const adminApi = {

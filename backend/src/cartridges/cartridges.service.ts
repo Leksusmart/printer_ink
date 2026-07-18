@@ -44,7 +44,7 @@ export class CartridgesService {
         status?: string;
         isdefective?: boolean;
         lastchangeby: number;
-        comment?:string
+        comment?: string
     }): Promise<Cartridge> {
         const { model, guid, status = 'Ожидает заправки', isdefective = false, lastchangeby, comment } = createDto;
 
@@ -54,11 +54,11 @@ export class CartridgesService {
 
         // Основная вставка картриджа
         const result = await this.databaseService.query(`
-    INSERT INTO public.cartridges 
-      (model, guid, status, isdefective, lastchangeby, lastchangedata, comment)
-    VALUES ($1, $2, $3, $4, $5, NOW(), $6)
-    RETURNING *
-  `, [
+            INSERT INTO public.cartridges 
+              (model, guid, status, isdefective, lastchangeby, lastchangedata, comment)
+            VALUES ($1, $2, $3, $4, $5, NOW(), $6)
+            RETURNING *
+          `, [
             model.trim(),
             guid.trim(),
             status,
@@ -70,17 +70,20 @@ export class CartridgesService {
         return result.rows[0];
     }
 
-    async changeStatusesTo(guids: string[], newStatus: string): Promise<{ success: boolean; }> {
+    async changeStatusesTo(guids: string[], newStatus: string, requestData?: any): Promise<{ success: boolean; }> {
         try {
             if (!guids || guids.length === 0) {
                 return { success: false };
             }
 
-            const result = await this.databaseService.query(`
-        UPDATE public.cartridges
-        SET status = $1
-        WHERE guid = ANY($2);
-      `, [newStatus, guids]);
+            const query = `
+            UPDATE public.cartridges
+            SET status = $1,
+                lastchangedata = $3
+            WHERE guid = ANY($2);
+        `;
+
+            const result = await this.databaseService.query(query, [newStatus, guids, requestData || null]);
 
             const rowCount = result.rowCount ?? 0;
             return { success: rowCount > 0 };
@@ -89,4 +92,5 @@ export class CartridgesService {
             return { success: false };
         }
     }
+
 }

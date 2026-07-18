@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -34,6 +34,21 @@ export class AdminController {
     @Post('create-user')
     async createEmployer(@Body() body: any) {
         return this.adminService.createEmployer(body.fullname, body.phone, body.role, body.password);
+    }
+
+    @Delete('delete-user')
+    async deleteUser(@Body() body: { identifier: string | number; adminId: number; force?: boolean }) {
+        const { identifier, adminId, force } = body;
+
+        if (!identifier) {
+            throw new BadRequestException('ID пользователя (identifier) обязателен');
+        }
+        if (!adminId) {
+            throw new BadRequestException('ID администратора (adminId) обязателен');
+        }
+
+        // Передаем всё в сервис
+        return await this.adminService.deleteEmployerById(identifier, adminId, !!force);
     }
 
     @Get('generate-guid')

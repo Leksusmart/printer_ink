@@ -7,7 +7,7 @@ interface CartridgeModalProps {
     onSuccess: () => void;
 }
 
-export default function CartridgeModal({ isOpen, onClose, onSuccess }: CartridgeModalProps) {
+export default function CreateCartridgeModal({ isOpen, onClose, onSuccess }: CartridgeModalProps) {
     const [model, setModel] = useState('');
     const [guid, setGuid] = useState('');
     const [status, setStatus] = useState('Ожидает заправки');

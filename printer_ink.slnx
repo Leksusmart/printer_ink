@@ -55,12 +55,13 @@
     <File Path="frontend/admin/app/dashboard/page.tsx" />
   </Folder>
   <Folder Name="/frontend/admin/app/dashboard/components/">
-    <File Path="frontend/admin/app/dashboard/components/CartridgeModal.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/CreateCartridgeModal.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/CreateUserModal.tsx" />
     <File Path="frontend/admin/app/dashboard/components/DashboardStats.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/DeleteCartridgeModal.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/DeleteUserModal.tsx" />
     <File Path="frontend/admin/app/dashboard/components/RequestsTable.tsx" />
-    <File Path="frontend/admin/app/dashboard/components/ScrapModal.tsx" />
     <File Path="frontend/admin/app/dashboard/components/SettingsModal.tsx" />
-    <File Path="frontend/admin/app/dashboard/components/UserModal.tsx" />
   </Folder>
   <Folder Name="/frontend/client/" />
   <Folder Name="/frontend/client/app/">

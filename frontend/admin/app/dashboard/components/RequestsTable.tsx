@@ -16,8 +16,10 @@ interface CartridgeDetail {
     model: string;
     guid: string;
     status: string;
+    lastchangedata: string;
     comment: string;
     type: string;
+    requestdata: string;
 }
 
 interface RequestsTableProps {
@@ -140,7 +142,7 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
     const columns: { key: SortableKey; label: string }[] = [
         { key: 'id', label: '№' },
         { key: 'data', label: 'Дата создания' },
-        { key: 'employee_name', label: 'Кто создал' },
+        { key: 'employee_name', label: 'Ответственный' },
         ...(showType ? [{ key: 'type' as SortableKey, label: 'Тип' }] : []),
         { key: 'cartridges_count', label: 'Картриджи' },
         ...(showDefect ? [{ key: 'isdefective' as SortableKey, label: 'Дефект' }] : []),
@@ -327,7 +329,7 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
             {/* Модалка с картриджами */}
             {cartridgeDetailsModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+                    <div className="w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl">
                         <div className="mb-5 flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-gray-900">
                                 Картриджи заявки #{cartridgeDetailsModal.requestId} {cartridgeDetailsModal.items.length > 0 && `— ${cartridgeDetailsModal.items[0].type}`}
@@ -355,6 +357,7 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">Модель</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">GUID</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">Статус</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600">Изменён</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">Комментарий</th>
                                         </tr>
                                     </thead>
@@ -364,6 +367,11 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
                                                 <td className="px-4 py-3">{item.model}</td>
                                                 <td className="px-4 py-3 font-mono text-xs break-all">{item.guid}</td>
                                                 <td className="px-4 py-3">{item.status}</td>
+                                                <td className="px-4 py-3">
+                                                    {item.lastchangedata && item.requestdata && item.lastchangedata !== item.requestdata
+                                                        ? item.lastchangedata.slice(0, -3) // Отрезает ":SS" с конца строки
+                                                        : '—'}
+                                                </td>
                                                 <td className="px-4 py-3">{item.comment}</td>
                                             </tr>
                                         ))}
