@@ -32,7 +32,7 @@ export class AdminService {
         SELECT 
           COUNT(CASE WHEN type = 'Заправка/ремонт' THEN 1 END) as totalfilled,
           COUNT(CASE WHEN type = 'Получение' THEN 1 END) as totalissued,
-          COUNT(CASE WHEN status = 'Списан' AND type = 'Списание' THEN 1 END) as totalscrapped
+          COUNT(CASE WHEN status = 'Списан' THEN 1 END) as totalscrapped
         FROM public.requests
       )
       SELECT 
@@ -142,30 +142,39 @@ export class AdminService {
     // Список картриджей (модель + GUID) для конкретной заявки — для кнопки "Подробнее"
     async getCartridgesForRequest(requestId: number) {
         const query = `
-            SELECT c.model, c.guid
-            FROM public.requestslist rl
-            JOIN public.cartridges c ON rl.cartridgeid = c.id
-            WHERE rl.requestid = $1
-        `;
+        SELECT 
+            c.model, 
+            c.guid,
+            c.status,
+            c.comment,
+            r.type
+        FROM public.requestslist rl
+        JOIN public.cartridges c ON rl.cartridgeid = c.id
+        JOIN public.requests r ON rl.requestid = r.id
+        WHERE rl.requestid = $1;
+    `;
         const result = await this.databaseService.query(query, [requestId]);
         return result.rows;
     }
 
-    async createCartridge(model: string, guid: string, status: string = 'Ожидает заправки', isdefective = false, adminId: number | null) {
+
+
+    async createCartridge(model: string, guid: string, status: string = 'Ожидает заправки', isdefective = false, adminId: number | null, comment: string) {
         if (!model?.trim() || !guid?.trim()) {
             throw new BadRequestException('Модель и GUID обязательны');
         }
 
         const result = await this.databaseService.query(`
-            INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         `, [
             model.trim(),
             guid.trim(),
             status,
             isdefective,
-            adminId
+            adminId,
+            comment
         ]);
 
         return result.rows[0];

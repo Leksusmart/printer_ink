@@ -20,4 +20,8 @@ export class CreateCartridgeDto {
     @IsString()
     @IsNotEmpty({ message: 'ID Сотрудника обязателен' })
     lastchangeby: number;
+
+    @IsString()
+    @IsOptional()
+    comment?: string = '';
 }

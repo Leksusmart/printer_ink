@@ -5,11 +5,11 @@ export class CreateRequestDto {
     type: string;
 
     @IsBoolean()
-    @IsOptional() // 👈 Сделайте его необязательным, так как для выдачи этот флаг не отправляется
+    @IsOptional()
     isDefective?: boolean;
 
     @IsString()
-    @IsOptional() // 👈 Тоже сделайте необязательным, так как бэкенд вычисляет статус сам
+    @IsOptional()
     status?: string;
 
     @IsString()

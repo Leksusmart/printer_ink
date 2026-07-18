@@ -43,9 +43,10 @@ export class CartridgesService {
         guid: string;
         status?: string;
         isdefective?: boolean;
-        lastchangeby: number
+        lastchangeby: number;
+        comment?:string
     }): Promise<Cartridge> {
-        const { model, guid, status = 'Ожидает заправки', isdefective = false, lastchangeby } = createDto;
+        const { model, guid, status = 'Ожидает заправки', isdefective = false, lastchangeby, comment } = createDto;
 
         if (!model || !guid) {
             throw new BadRequestException('Модель и GUID обязательны');
@@ -54,15 +55,16 @@ export class CartridgesService {
         // Основная вставка картриджа
         const result = await this.databaseService.query(`
     INSERT INTO public.cartridges 
-      (model, guid, status, isdefective, lastchangeby, lastchangedata)
-    VALUES ($1, $2, $3, $4, $5, NOW())
+      (model, guid, status, isdefective, lastchangeby, lastchangedata, comment)
+    VALUES ($1, $2, $3, $4, $5, NOW(), $6)
     RETURNING *
   `, [
             model.trim(),
             guid.trim(),
             status,
             isdefective,
-            lastchangeby || null
+            lastchangeby || null,
+            comment
         ]);
 
         return result.rows[0];

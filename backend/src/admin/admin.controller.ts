@@ -43,8 +43,8 @@ export class AdminController {
     }
 
     @Post('create-cartridge')
-    async createCartridge(@Body() body: { model: string; guid: string; status: string; isdefective: boolean; adminId: number | null }) {
-        return this.adminService.createCartridge(body.model, body.guid, body.status, body.isdefective, body.adminId);
+    async createCartridge(@Body() body: { model: string; guid: string; status: string; isdefective: boolean; adminId: number | null, comment: string }) {
+        return this.adminService.createCartridge(body.model, body.guid, body.status, body.isdefective, body.adminId, body.comment);
     }
     @Post('scrap-cartridge')
     async scrapCartridge(@Body() body: { guid: string }) {

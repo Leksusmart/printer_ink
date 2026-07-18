@@ -47,11 +47,6 @@ export class RequestsService {
 
     async createRequest(data: any): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
-            const moscowDateTime = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-            const [datePart, timePart] = moscowDateTime.split(', ');
-            const [day, month, year] = datePart.split('.');
-            const currentDateTime = `${year}-${month}-${day} ${timePart}`;
-
             const requestType = data.type; // 'Приёмка', 'Заправка/ремонт', 'Получение'
             const employeeId = data.EmployeeID;
             const comment = data.comment || '';
@@ -76,12 +71,12 @@ export class RequestsService {
             // 1. Создаем саму заявку в БД
             const insertRequestQuery = `
             INSERT INTO public.requests 
-                (type, isdefective, status, data, employee, lastchangedata, lastchangeby, comment)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                (type, isdefective, status, employee, lastchangeby, comment)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id;
         `;
             const requestResult = await this.databaseService.query(insertRequestQuery, [
-                requestType, isRequestDefective, 'Создана', currentDateTime, employeeId, currentDateTime, employeeId, comment
+                requestType, isRequestDefective, 'Создана', employeeId, employeeId, comment
             ]) as any;
 
             const requestId = requestResult.rows[0].id;
@@ -95,8 +90,12 @@ export class RequestsService {
                 SELECT $1, c.id
                 FROM public.cartridges c
                 WHERE c.guid = ANY($2::text[]);
+
+                UPDATE public.cartridges
+                SET comment = $3
+                WHERE guid = ANY($2::text[]);
             `;
-                await this.databaseService.query(linkExistingQuery, [requestId, existingGuids]);
+                await this.databaseService.query(linkExistingQuery, [requestId, existingGuids, comment]);
             }
 
             // 3. Если есть НОВЫЕ картриджи (из ручного ввода) — создаем их и привязываем к этой же заявке
@@ -113,7 +112,7 @@ export class RequestsService {
 
                 const insertNewCartridgesQuery = `
                 WITH inserted_cartridges AS (
-                    INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangedata, lastchangeby)
+                    INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment)
                     SELECT $1, u.guid, $2, $3, $4, $5
                     FROM unnest($6::text[]) AS u(guid)
                     RETURNING id
@@ -126,8 +125,8 @@ export class RequestsService {
                     newCartridge.model,
                     cartridgeTargetStatus,
                     isRequestDefective,
-                    currentDateTime,
                     employeeId,
+                    comment,
                     generatedGuids,
                     requestId
                 ]);

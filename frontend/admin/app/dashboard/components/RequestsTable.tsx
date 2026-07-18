@@ -18,6 +18,9 @@ interface AdminRequestRow {
 interface CartridgeDetail {
     model: string;
     guid: string;
+    status: string;
+    comment: string;
+    type: string;
 }
 
 interface RequestsTableProps {
@@ -329,7 +332,7 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
                     <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
                         <div className="mb-5 flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-gray-900">
-                                Картриджи заявки #{cartridgeDetailsModal.requestId}
+                                Картриджи заявки #{cartridgeDetailsModal.requestId} {cartridgeDetailsModal.items.length > 0 && `— ${cartridgeDetailsModal.items[0].type}`}
                             </h3>
                             <button
                                 onClick={closeCartridgeDetailsModal}
@@ -353,6 +356,8 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
                                         <tr>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">Модель</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">GUID</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600">Статус</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600">Комментарий</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -360,6 +365,8 @@ export default function RequestsTable({ title, data, showType, showDefect, rowsC
                                             <tr key={index}>
                                                 <td className="px-4 py-3">{item.model}</td>
                                                 <td className="px-4 py-3 font-mono text-xs break-all">{item.guid}</td>
+                                                <td className="px-4 py-3">{item.status}</td>
+                                                <td className="px-4 py-3">{item.comment}</td>
                                             </tr>
                                         ))}
                                     </tbody>

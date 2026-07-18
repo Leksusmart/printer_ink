@@ -12,6 +12,7 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
     const [guid, setGuid] = useState('');
     const [status, setStatus] = useState('Ожидает заправки');
     const [isDefective, setIsDefective] = useState(false);
+    const [comment, setComment] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [generating, setGenerating] = useState(false);
@@ -57,7 +58,8 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
                     guid,
                     status,
                     isdefective: isDefective,
-                    adminId: adminId
+                    adminId: adminId,
+                    comment: comment
                 })
             });
 
@@ -66,6 +68,7 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
                 onSuccess();
                 setModel('');
                 setGuid('');
+                setComment('');
                 setTimeout(() => {
                     setMessage('');
                 }, 1500);
@@ -126,7 +129,10 @@ export default function CartridgeModal({ isOpen, onClose, onSuccess }: Cartridge
                             )}
                         </select>
                     </div>
-
+                    <div>
+                        <label className="block text-sm mb-1">Комментарий</label>
+                        <input type="text" value={comment} onChange={e => setComment(e.target.value)} required className="w-full border p-3 rounded" />
+                    </div>
                     <div className="flex gap-3 pt-4">
                         <button type="button" onClick={onClose} className="flex-1 py-3 border rounded">Отмена</button>
                         <button type="submit" disabled={loading || !model} className="flex-1 py-3 bg-gray-700 text-white rounded">

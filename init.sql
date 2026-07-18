@@ -23,7 +23,8 @@ CREATE TABLE public.cartridges (
     status character varying(20),
     isdefective boolean DEFAULT false,
     lastchangedata timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
-    lastchangeby integer
+    lastchangeby integer,
+	comment character varying(255)
 );
 
 ALTER TABLE public.cartridges OWNER TO postgres;

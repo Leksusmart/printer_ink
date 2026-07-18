@@ -8,6 +8,7 @@ interface CartridgeItem {
     guid: string;
     model: string;
     status: string;
+    comment: string;
     count: string;
     isDefective: boolean;
     isResolved: boolean;
@@ -32,7 +33,7 @@ const OPERATION_TYPE_LABEL: Record<OperationType, string> = {
 };
 
 const emptyRowForType = (_type: OperationType): CartridgeItem => ({
-    mode: 'guid', guid: '', model: '', status: '', count: '', isDefective: false, isResolved: false, lookupError: ''
+    mode: 'guid', guid: '', model: '', status: '', comment: '', count: '', isDefective: false, isResolved: false, lookupError: ''
 });
 
 const qrImageUrl = (data: string) =>
@@ -251,6 +252,7 @@ function DashboardContent() {
                         guid: guidValue,
                         model: data.model,
                         status: data.status,
+                        comment: comment,
                         isResolved: false,
                         lookupError: `Принимать можно только картриджи со статусом "Выдан" (текущий статус: ${data.status})`,
                     };
@@ -266,6 +268,7 @@ function DashboardContent() {
                         guid: guidValue,
                         model: data.model,
                         status: data.status,
+                        comment: comment,
                         isResolved: false,
                         lookupError: `Получать можно только картриджи со статусом "Готов к выдаче" (текущий статус: ${data.status})`,
                     };
@@ -283,6 +286,7 @@ function DashboardContent() {
                         guid: guidValue,
                         model: data.model,
                         status: data.status,
+                        comment: comment,
                         isResolved: false,
                         lookupError: `На заправку/ремонт можно принять только картриджи со статусом "Ожидает заправки" или "Ожидает ремонта" (текущий статус: ${data.status})`,
                     };
@@ -320,6 +324,7 @@ function DashboardContent() {
                     guid: guidValue,
                     model: data.model,
                     status: data.status,
+                    comment: comment,
                     isResolved: true,
                     lookupError: '',
                 };
@@ -434,6 +439,8 @@ function DashboardContent() {
                                 }
                             }
                         });
+                    } else {
+                        throw new Error(`Ошибка сервера`);
                     }
                     return result;
                 })
