@@ -31,12 +31,23 @@ interface CartridgesTableProps {
     tableData: CartridgeRow[];
     rowsCollapsedLimit?: number;
     fetchAllData: () => Promise<void>;
+    adminId?: number;
 }
+
+// ⚠️ Список статусов взят из тех, что встречаются в остальном коде бэкенда.
+// Поправьте, если в БД есть другие значения.
+const CARTRIDGE_STATUSES = [
+    'Ожидает заправки',
+    'Ожидает ремонта',
+    'Готов к выдаче',
+    'Выдан',
+    'Списан',
+];
 
 type SortableKey = keyof CartridgeRow;
 type ColumnKey = SortableKey | 'history';
 
-export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, fetchAllData }: CartridgesTableProps) {
+export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, fetchAllData, adminId }: CartridgesTableProps) {
     const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'asc' | 'desc' } | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [openFilterMenu, setOpenFilterMenu] = useState<SortableKey | null>(null);
@@ -65,6 +76,49 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
 
     const closeRequestsHistoryModal = () => {
         setRequestsHistoryModal({ isOpen: false, guid: null, isLoading: false, error: '', items: [] });
+    };
+
+    const [statusModal, setStatusModal] = useState<{
+        isOpen: boolean;
+        guid: string | null;
+        currentStatus: string;
+        selectedStatus: string;
+        comment: string;
+        isSubmitting: boolean;
+        error: string;
+    }>({ isOpen: false, guid: null, currentStatus: '', selectedStatus: '', comment: '', isSubmitting: false, error: '' });
+
+    const openStatusModal = (row: CartridgeRow) => {
+        setStatusModal({
+            isOpen: true,
+            guid: row.guid,
+            currentStatus: row.status,
+            selectedStatus: row.status,
+            comment: '',
+            isSubmitting: false,
+            error: '',
+        });
+    };
+
+    const closeStatusModal = () => {
+        setStatusModal({ isOpen: false, guid: null, currentStatus: '', selectedStatus: '', comment: '', isSubmitting: false, error: '' });
+    };
+
+    const submitStatusChange = async () => {
+        if (!statusModal.guid) return;
+        if (!adminId) {
+            setStatusModal(prev => ({ ...prev, error: 'Не удалось определить администратора (adminId отсутствует)' }));
+            return;
+        }
+        setStatusModal(prev => ({ ...prev, isSubmitting: true, error: '' }));
+        try {
+            await adminApi.changeCartridgeStatus(statusModal.guid, statusModal.selectedStatus, adminId, statusModal.comment || undefined);
+            closeStatusModal();
+            await fetchAllData();
+        } catch (err) {
+            const error = err as Error;
+            setStatusModal(prev => ({ ...prev, isSubmitting: false, error: error.message }));
+        }
     };
 
     const [filters, setFilters] = useState<{
@@ -357,9 +411,17 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
                                                     <span className="rounded bg-green-100 px-3 py-1 text-sm font-medium text-green-700">Нет</span>
                                                 )
                                             ) : col.key === 'status' ? (
-                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${row.status === 'Готов к выдаче' || row.status === 'Выдан' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-                                                    {row.status}
-                                                </span>
+                                                <div className="flex flex-col items-start gap-1.5">
+                                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${row.status === 'Готов к выдаче' || row.status === 'Выдан' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                        {row.status}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => openStatusModal(row)}
+                                                        className="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                                                    >
+                                                        Изм. статус
+                                                    </button>
+                                                </div>
                                             ) : col.key === 'lastchangeby' ? (
                                                     row.lastchangeby ? <span className="font-medium">{formatFIO(row.lastchangeby)}</span> : <span className="text-gray-400 italic">—</span>
                                             ) : col.key === 'comment' ? (
@@ -456,6 +518,69 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
 
             <CreateCartridgeModal isOpen={isCreateCartridgeModalOpen} onClose={() => setIsCreateCartridgeModalOpen(false)} onSuccess={fetchAllData} />
             <DeleteCartridgeModal isOpen={isDeleteCartridgeModalOpen} onClose={() => setIsDeleteCartridgeModalOpen(false)} onSuccess={fetchAllData} />
+
+            {/* Модалка изменения статуса одного картриджа */}
+            {statusModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <div className="mb-5 flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-900">Изменить статус картриджа</h3>
+                            <button
+                                onClick={closeStatusModal}
+                                className="text-2xl leading-none text-gray-400 hover:text-gray-600"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <p className="mb-4 font-mono text-xs text-gray-400 break-all">{statusModal.guid}</p>
+
+                        {statusModal.error && (
+                            <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+                                {statusModal.error}
+                            </div>
+                        )}
+
+                        <label className="mb-2 block text-sm font-medium text-gray-700">Новый статус</label>
+                        <select
+                            value={statusModal.selectedStatus}
+                            onChange={(e) => setStatusModal(prev => ({ ...prev, selectedStatus: e.target.value }))}
+                            disabled={statusModal.isSubmitting}
+                            className="mb-4 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                        >
+                            {CARTRIDGE_STATUSES.map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+
+                        <label className="mb-2 block text-sm font-medium text-gray-700">Комментарий (необязательно)</label>
+                        <textarea
+                            value={statusModal.comment}
+                            onChange={(e) => setStatusModal(prev => ({ ...prev, comment: e.target.value }))}
+                            disabled={statusModal.isSubmitting}
+                            rows={3}
+                            className="mb-5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                        />
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={closeStatusModal}
+                                disabled={statusModal.isSubmitting}
+                                className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                onClick={submitStatusChange}
+                                disabled={statusModal.isSubmitting || statusModal.selectedStatus === statusModal.currentStatus}
+                                className="rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                            >
+                                {statusModal.isSubmitting ? 'Сохранение...' : 'Сохранить'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

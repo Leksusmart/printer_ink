@@ -51,6 +51,17 @@ export class AdminController {
     @Post('scrap-cartridge')
     async scrapCartridge(@Body() body: { guid: string, adminId:number }) { return this.adminService.scrapCartridgeByGuid(body.guid, body.adminId); }
 
+    @Post('change-cartridge-status')
+    async changeCartridgeStatus(@Body() body: { guid: string; status: string; adminId: number; comment?: string }) {
+        if (!body.guid || !body.status) {
+            throw new BadRequestException('guid и status обязательны');
+        }
+        if (!body.adminId) {
+            throw new BadRequestException('ID администратора (adminId) обязателен');
+        }
+        return this.adminService.changeCartridgeStatus(body.guid, body.status, body.adminId, body.comment);
+    }
+
     @Get('settings')
     async getSettings() { return this.adminService.getSettings(); }
 

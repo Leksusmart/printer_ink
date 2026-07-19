@@ -54,6 +54,16 @@ export const adminApi = {
         return res.json();
     },
 
+    async changeCartridgeStatus(guid: string, status: string, adminId: number, comment?: string) {
+        const res = await fetch(`${API_BASE}/change-cartridge-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ guid, status, adminId, comment })
+        });
+        if (!res.ok) throw new Error('Ошибка изменения статуса картриджа');
+        return res.json();
+    },
+
     async getRequests() {
         const res = await fetch(`${API_BASE}/requests`);
         if (!res.ok) throw new Error('Ошибка загрузки заявок');

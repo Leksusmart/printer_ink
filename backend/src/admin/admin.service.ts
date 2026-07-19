@@ -272,6 +272,64 @@ export class AdminService {
         }
     }
 
+    // Ручное изменение статуса картриджа из админки (кнопка "Изм. статус" в таблице "Картриджи").
+    // Как и списание, заводит "заявку"-аудит, чтобы действие попало в историю картриджа.
+    async changeCartridgeStatus(guid: string, newStatus: string, adminId: number, comment?: string) {
+        if (!guid?.trim() || !newStatus?.trim()) {
+            throw new BadRequestException('guid и newStatus обязательны');
+        }
+        if (!adminId) {
+            throw new BadRequestException('ID администратора (adminId) обязателен');
+        }
+
+        const cartridgeCheck = await this.databaseService.query(
+            `SELECT id FROM public.cartridges WHERE guid = $1`,
+            [guid]
+        );
+
+        if (cartridgeCheck.rows.length === 0) {
+            throw new NotFoundException(`Картридж с GUID ${guid} не найден`);
+        }
+
+        const cartridgeId = cartridgeCheck.rows[0].id;
+
+        await this.databaseService.query('BEGIN');
+
+        try {
+            const requestResult = await this.databaseService.query(`
+              INSERT INTO public.requests (type, isdefective, status, employee, lastchangeby, comment)
+              VALUES ($1, $2, $3, $4, $5, $6)
+              RETURNING id, data;
+            `, [
+                'Изменение статуса',
+                false,
+                'Создана',
+                adminId,
+                adminId,
+                comment ?? null
+            ]);
+
+            const requestId = requestResult.rows[0].id;
+            const requestData = requestResult.rows[0].data;
+
+            await this.databaseService.query(`
+              INSERT INTO public.requestslist (requestid, cartridgeid)
+              VALUES ($1, $2)
+            `, [requestId, cartridgeId]);
+
+            await this.cartridgesService.changeStatusesTo([guid], newStatus, requestData, adminId, comment);
+
+            await this.databaseService.query('COMMIT');
+
+            return { success: true, message: `Статус картриджа ${guid} изменён на "${newStatus}"` };
+
+        } catch (error) {
+            await this.databaseService.query('ROLLBACK');
+            console.error(`Ошибка при изменении статуса картриджа ${guid}:`, error);
+            throw error;
+        }
+    }
+
     async createEmployer(fullname: string, phone: string, role: string = 'User', password?: string) {
         if (!phone || !fullname) throw new BadRequestException('Телефон и ФИО обязательны');
 

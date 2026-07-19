@@ -147,6 +147,7 @@ export default function DashboardPage() {
                             tableData={cartridgesData}
                             rowsCollapsedLimit={settings.rowscollapsedlimit}
                             fetchAllData={fetchAllData}
+                            adminId={admin?.id}
                         />
                     )}
                     {activeTableTab === 2 && (
