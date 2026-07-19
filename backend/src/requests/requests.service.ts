@@ -54,14 +54,14 @@ export class RequestsService {
         const result = await this.databaseService.query(`
         SELECT 
             r.id,
-            TO_CHAR(r.data, 'DD.MM.YY HH:MI') as data,
+            TO_CHAR(r.data, 'DD.MM.YY HH24:MI') as data,
             e.fullname as employee_name,
             r.type,
             r.status,
             r.isdefective,
             COALESCE(r.comment, '') as comment,
             le.fullname as lastchangeby_name,
-            TO_CHAR(r.lastchangedata, 'DD.MM.YY HH:MI') as lastchangedata
+            TO_CHAR(r.lastchangedata, 'DD.MM.YY HH24:MI') as lastchangedata
         FROM public.requests r
         JOIN public.requestslist rl ON r.id = rl.requestid
         LEFT JOIN public.employers e ON r.employee = e.id

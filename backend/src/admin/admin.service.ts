@@ -107,7 +107,7 @@ export class AdminService {
                 c.isdefective,
                 c.comment,
                 le.fullname as lastchangeby,
-                TO_CHAR(c.lastchangedata, 'DD.MM.YY HH:MI') as lastchangedata
+                TO_CHAR(c.lastchangedata, 'DD.MM.YY HH24:MI') as lastchangedata
             FROM public.cartridges c
             LEFT JOIN public.employers le ON c.lastchangeby = le.id
             ORDER BY c.id DESC
