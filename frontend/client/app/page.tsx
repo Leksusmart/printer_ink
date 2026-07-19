@@ -53,11 +53,6 @@ export default function LoginPage() {
         setError('');
         setIsLoading(true);
 
-        if (phone.length < 18) {
-            setError('Ошибка: Введите полный номер телефона');
-            return;
-        }
-
         const cleanPhone = '+7' + phone.replace(/[^\d]/g, '').slice(1);
 
         try {

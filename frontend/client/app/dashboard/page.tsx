@@ -217,14 +217,13 @@ function DashboardContent() {
             guid: '',
             model: '',
             status: '',
+            comment: '',
             isResolved: false,
             lookupError: '',
         };
         setCartridges(updated);
     };
 
-    // Ищем картридж по GUID на бэкенде: подтягиваем его модель и текущий статус
-    // GET /cartridges/search?guid=... → { id, model, guid, status, isDefective, lastchangedata, lastchangeby }
     const lookupCartridgeByGuid = async (index: number) => {
         const guidValue = cartridges[index].guid.trim();
 
@@ -242,8 +241,6 @@ function DashboardContent() {
             }
             const data = await response.json();
 
-            // Для ПРИЕМКИ принять можно только картридж, который сейчас числится как "Выдан"
-            // ⚠️ Строка статуса "Выдан" — предположение по названию в БД, уточните точное значение
             if (operationType === 'ПРИЕМКА' && data.status !== 'Выдан') {
                 setCartridges((prev) => {
                     const updated = [...prev];
@@ -252,7 +249,7 @@ function DashboardContent() {
                         guid: guidValue,
                         model: data.model,
                         status: data.status,
-                        comment: comment,
+                        comment: data.comment,
                         isResolved: false,
                         lookupError: `Принимать можно только картриджи со статусом "Выдан" (текущий статус: ${data.status})`,
                     };
@@ -268,7 +265,7 @@ function DashboardContent() {
                         guid: guidValue,
                         model: data.model,
                         status: data.status,
-                        comment: comment,
+                        comment: data.comment,
                         isResolved: false,
                         lookupError: `Получать можно только картриджи со статусом "Готов к выдаче" (текущий статус: ${data.status})`,
                     };
@@ -276,9 +273,9 @@ function DashboardContent() {
                 });
                 return;
             }
-            // Заправка/ремонт — принять можно только картридж со статусом "Ожидает заправки" или "Ожидает ремонта"
-            const ЗАПРАВКА_РЕМОНТ_СТАТУСЫ = ['Ожидает заправки', 'Ожидает ремонта'];
-            if (operationType === 'ЗАПРАВКА_РЕМОНТ' && !ЗАПРАВКА_РЕМОНТ_СТАТУСЫ.includes(data.status)) {
+
+            const refuelRepairStatuses = ['Ожидает заправки', 'Ожидает ремонта'];
+            if (operationType === 'ЗАПРАВКА_РЕМОНТ' && !refuelRepairStatuses.includes(data.status)) {
                 setCartridges((prev) => {
                     const updated = [...prev];
                     updated[index] = {
@@ -286,7 +283,7 @@ function DashboardContent() {
                         guid: guidValue,
                         model: data.model,
                         status: data.status,
-                        comment: comment,
+                        comment: data.comment,
                         isResolved: false,
                         lookupError: `На заправку/ремонт можно принять только картриджи со статусом "Ожидает заправки" или "Ожидает ремонта" (текущий статус: ${data.status})`,
                     };
@@ -294,8 +291,7 @@ function DashboardContent() {
                 });
                 return;
             }
-            // Защита от дубликатов: нельзя добавить один и тот же картридж в заявку дважды.
-            // Строку с повторным GUID просто очищаем и показываем предупреждение по центру экрана.
+
             const isDuplicateInRequest = cartridges.some(
                 (c, i) => i !== index && c.mode === 'guid' && c.isResolved && c.guid === guidValue
             );
@@ -308,6 +304,7 @@ function DashboardContent() {
                         guid: '',
                         model: '',
                         status: '',
+                        comment: '',
                         isResolved: false,
                         lookupError: '',
                     };
@@ -324,7 +321,7 @@ function DashboardContent() {
                     guid: guidValue,
                     model: data.model,
                     status: data.status,
-                    comment: comment,
+                    comment: data.comment,
                     isResolved: true,
                     lookupError: '',
                 };
@@ -363,12 +360,9 @@ function DashboardContent() {
         const scannedItems = cartridges.filter(item => item.mode === 'guid' && item.guid && !item.lookupError);
 
         if (manualItems.length === 0 && scannedItems.length === 0) {
-            alert('Заявка пуста. Нечего отправлять.');
             return;
         }
 
-        // Делим на две кучи: исправные и неисправные
-        // Обратите внимание: для операций отличных от ПРИЕМКА, все картриджи по умолчанию считаются исправными (isDefective = false)
         const isPriemka = operationType === 'ПРИЕМКА';
 
         const healthyScanned = scannedItems.filter(item => !isPriemka || !item.isDefective);
@@ -377,7 +371,6 @@ function DashboardContent() {
         const defectiveScanned = isPriemka ? scannedItems.filter(item => item.isDefective) : [];
         const defectiveManual = isPriemka ? manualItems.filter(item => item.isDefective) : [];
 
-        // Массив для пакетов запросов (максимум 2 элемента)
         const requestsPayloads: any[] = [];
 
         // Функция для сборки единого комбинированного пакета
@@ -423,10 +416,6 @@ function DashboardContent() {
                     if (!res.ok) throw new Error(`Ошибка сервера: ${res.status}`);
                     const result = await res.json();
 
-                    // ⚠️ result.GUIDs содержит GUID-ы ТОЛЬКО новых (вручную созданных) картриджей.
-                    // Если заявка составлена целиком из уже существующих GUID, GUIDs будет пустым
-                    // массивом при success: true — это не ошибка, поэтому раньше проверять
-                    // result.GUIDs.length > 0 как признак успеха было неверно.
                     if (!result.success) {
                         throw new Error(`Ошибка сервера`);
                     }
@@ -590,6 +579,12 @@ function DashboardContent() {
                                                         {'   '}
                                                         Текущий статус: <span className="font-medium text-gray-700">{item.status}</span>
                                                     </p>
+                                                    {item.comment?.trim() && (
+                                                        <p className="text-xs text-gray-500">
+                                                            Комментарий: <span className="font-medium text-gray-700">{item.comment}</span>
+                                                        </p>
+                                                    )}
+
                                                     {operationType === 'ПРИЕМКА' && (
                                                         <div className="space-y-1.5">
                                                             <label className="block text-sm text-gray-700">Картридж исправен?</label>
@@ -777,6 +772,7 @@ function DashboardContent() {
 
                     <button
                         type="submit"
+                        disabled={!isFormValid}
                         className={`w-full py-3 font-bold text-xs tracking-wider rounded uppercase transition-colors duration-200 ${isFormValid
                             ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
                             : 'bg-gray-200 text-gray-600 cursor-not-allowed'
