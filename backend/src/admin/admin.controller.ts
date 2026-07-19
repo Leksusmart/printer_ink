@@ -47,7 +47,6 @@ export class AdminController {
             throw new BadRequestException('ID администратора (adminId) обязателен');
         }
 
-        // Передаем всё в сервис
         return await this.adminService.deleteEmployerById(identifier, adminId, !!force);
     }
 

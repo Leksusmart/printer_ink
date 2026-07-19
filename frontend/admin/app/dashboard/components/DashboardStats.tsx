@@ -96,7 +96,7 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
                         <div className="text-sm text-gray-600 mt-1">Выдано</div>
                     </div>
                     <div>
-                        <div className="text-4xl font-bold text-gray-900">{h.totalscrapped ?? 'ERR'}</div>
+                        <div className="text-4xl font-bold text-gray-900">{c.totalscrapped ?? 'ERR'}</div>
                         <div className="text-sm text-gray-600 mt-1">Списано</div>
                     </div>
                     <div>

@@ -12,7 +12,7 @@ export class AdminService {
     ) { }
 
     async scrapCartridgeByGuid(guid: string) {
-        return await this.cartridgesService.changeStatusesTo([guid], 'Списан');
+        return await this.cartridgesService.changeStatusesTo([guid], 'Списан', 'NOW()');
     }
 
     async getStats() {
@@ -25,14 +25,14 @@ export class AdminService {
           COUNT(CASE WHEN status = 'Ожидает ремонта' THEN 1 END) as repair,
           COUNT(CASE WHEN isdefective = true THEN 1 END) as defective,
           COUNT(*) as totalcartridges,
-          COUNT(CASE WHEN status NOT IN ('Выдан', 'Списан') THEN 1 END) as idle
+          COUNT(CASE WHEN status NOT IN ('Выдан', 'Списан') THEN 1 END) as idle,
+          COUNT(CASE WHEN status = 'Списан' THEN 1 END) as totalscrapped
         FROM public.cartridges
       ),
       history AS (
         SELECT 
           COUNT(CASE WHEN type = 'Заправка/ремонт' THEN 1 END) as totalfilled,
-          COUNT(CASE WHEN type = 'Получение' THEN 1 END) as totalissued,
-          COUNT(CASE WHEN status = 'Списан' THEN 1 END) as totalscrapped
+          COUNT(CASE WHEN type = 'Получение' THEN 1 END) as totalissued
         FROM public.requests
       )
       SELECT 
@@ -53,12 +53,12 @@ export class AdminService {
                     repair: 0,
                     defective: 0,
                     totalcartridges: 0,
-                    idle: 0
+                    idle: 0,
+                    totalscrapped: 0
                 },
                 historyStats: {
                     totalfilled: 0,
-                    totalissued: 0,
-                    totalscrapped: 0
+                    totalissued: 0
                 }
             };
         }
@@ -92,7 +92,6 @@ export class AdminService {
   ORDER BY r.data DESC
 `;
     }
-
 
     // История абсолютно всех заявок
     async getHistoryLogs() {
@@ -300,7 +299,6 @@ export class AdminService {
             throw new BadRequestException('Не удалось удалить пользователя: ' + error.message);
         }
     }
-
 
     async getNewGUID(): Promise<string> {
         const result = await this.databaseService.generateGUID();

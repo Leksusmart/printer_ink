@@ -55,6 +55,7 @@
     <File Path="frontend/admin/app/dashboard/page.tsx" />
   </Folder>
   <Folder Name="/frontend/admin/app/dashboard/components/">
+    <File Path="frontend/admin/app/dashboard/components/CartridgesTable.tsx" />
     <File Path="frontend/admin/app/dashboard/components/CreateCartridgeModal.tsx" />
     <File Path="frontend/admin/app/dashboard/components/CreateUserModal.tsx" />
     <File Path="frontend/admin/app/dashboard/components/DashboardStats.tsx" />

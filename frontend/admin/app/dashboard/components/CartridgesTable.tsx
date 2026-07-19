@@ -2,10 +2,6 @@
 import { useState, useMemo } from 'react';
 import { adminApi } from '../../api/adminApi';
 
-// ⚠️ Поля картриджа — по аналогии с ответом /cartridges/search на клиентском дашборде
-// (id, guid, model, status, isDefective, lastchangedata, lastchangeby_name).
-// Если в БД реально есть другие/дополнительные поля — просто дополните этот интерфейс
-// и массив columns ниже, остальная логика (сортировка, фильтры) их подхватит.
 interface CartridgeRow {
     id: number;
     guid: string;
@@ -16,8 +12,6 @@ interface CartridgeRow {
     lastchangeby_name?: string;
 }
 
-// ⚠️ Поля заявки — по аналогии с AdminRequestRow из RequestsTable (ответ /requests/search
-// по всей видимости строится похожим запросом). Поправьте при необходимости под реальный ответ.
 interface RequestHistoryItem {
     id: number;
     data: string;
@@ -35,7 +29,6 @@ interface CartridgesTableProps {
 
 type SortableKey = keyof CartridgeRow;
 // Колонки таблицы = реальные поля картриджа + служебная колонка-кнопка "history"
-// (у неё нет данных в CartridgeRow, поэтому она не участвует в сортировке/фильтрах).
 type ColumnKey = SortableKey | 'history';
 
 export default function CartridgesTable({ data, rowsCollapsedLimit }: CartridgesTableProps) {
@@ -130,10 +123,8 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
         { key: 'id', label: '№' },
         { key: 'guid', label: 'GUID' },
         { key: 'model', label: 'Модель' },
-        { key: 'status', label: 'Статус' },
         { key: 'isdefective', label: 'Дефект' },
-        { key: 'lastchangeby_name', label: 'Кто менял последним' },
-        { key: 'lastchangedata', label: 'Дата изменения' },
+        { key: 'lastchangeby_name', label: 'Ответственный' },
         { key: 'history', label: 'Заявки' },
     ];
 
@@ -146,10 +137,8 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
             case 'id': return 'w-12';
             case 'guid': return 'w-[420px]';
             case 'model': return 'w-28';
-            case 'status': return 'w-32';
             case 'isdefective': return 'w-20';
             case 'lastchangeby_name': return 'w-32';
-            case 'lastchangedata': return 'w-28';
             case 'history': return 'w-28';
             default: return '';
         }

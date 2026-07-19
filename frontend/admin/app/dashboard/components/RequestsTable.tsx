@@ -118,7 +118,6 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
         return result;
     }, [tableData, filters, sortConfig]);
 
-
     const requestSort = (key: SortableKey) => {
         let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
