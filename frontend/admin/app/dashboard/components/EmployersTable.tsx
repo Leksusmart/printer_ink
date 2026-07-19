@@ -98,7 +98,7 @@ export default function EmployersTable({ title, tableData, rowsCollapsedLimit, f
     const columnWidthClass = (key: ColumnKey): string => {
         switch (key) {
             case 'id': return 'w-10';
-            case 'fullname': return 'w-100';
+            case 'fullname': return 'w-auto flex-1';
             case 'role': return 'w-25';
             case 'phone': return 'w-32';
             default: return '';

@@ -70,7 +70,7 @@ export class CartridgesService {
         return result.rows[0];
     }
 
-    async changeStatusesTo(guids: string[], newStatus: string, requestData?: any): Promise<{ success: boolean; }> {
+    async changeStatusesTo(guids: string[], newStatus: string, requestData: string, employeeID: number, comment?: string): Promise<{ success: boolean; }> {
         try {
             if (!guids || guids.length === 0) {
                 return { success: false };
@@ -79,17 +79,25 @@ export class CartridgesService {
             const query = `
             UPDATE public.cartridges
             SET status = $1,
-                lastchangedata = $3
+                lastchangedata = $3,
+                lastchangeby = $4,
+                comment = COALESCE($5, comment)
             WHERE guid = ANY($2);
         `;
-
-            const result = await this.databaseService.query(query, [newStatus, guids, requestData || null]);
+        
+            const result = await this.databaseService.query(query, [
+                newStatus,
+                guids,
+                requestData,
+                employeeID,
+                comment || null
+            ]);
 
             const rowCount = result.rowCount ?? 0;
             return { success: rowCount > 0 };
         } catch (error) {
-            console.error('Ошибка при массовом изменении статуса картриджей:', error);
-            return { success: false };
+            console.error(`Ошибка при массовом изменении статуса картриджей:`, error);
+            throw error;
         }
     }
 

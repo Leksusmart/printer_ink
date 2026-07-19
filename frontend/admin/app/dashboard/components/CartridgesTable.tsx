@@ -13,6 +13,7 @@ interface CartridgeRow {
     isdefective: boolean
     lastchangeby?: string;
     lastchangedata?: string;
+    comment?: string;
 }
 
 interface RequestHistoryItem {
@@ -139,6 +140,7 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
         { key: 'status', label: 'Статус' },
         { key: 'lastchangeby', label: 'Ответственный' },
         { key: 'lastchangedata', label: 'Изменён' },
+        { key: 'comment', label: 'Комментарий' },
         { key: 'history', label: ' ' },
     ];
 
@@ -149,12 +151,13 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
     const columnWidthClass = (key: ColumnKey): string => {
         switch (key) {
             case 'id': return 'w-10';
-            case 'guid': return 'w-[420px]';
+            case 'guid': return 'w-[360px] max-w-[360px]';
             case 'model': return 'w-28';
-            case 'isdefective': return 'w-18';
-            case 'status': return 'w-32';
+            case 'isdefective': return 'w-20';
+            case 'status': return 'w-48';
             case 'lastchangeby': return 'w-32';
-            case 'lastchangedata': return 'w-28';
+            case 'lastchangedata': return 'w-40';
+            case 'comment': return 'w-auto flex-1';
             case 'history': return 'w-28';
             default: return '';
         }
@@ -359,6 +362,8 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
                                                 </span>
                                             ) : col.key === 'lastchangeby' ? (
                                                     row.lastchangeby ? <span className="font-medium">{formatFIO(row.lastchangeby)}</span> : <span className="text-gray-400 italic">—</span>
+                                            ) : col.key === 'comment' ? (
+                                                    row.comment ? <span className="font-medium">{row.comment}</span> : <span className="text-gray-400 italic">—</span>
                                             ) : col.key === 'lastchangedata' ? (
                                                     row.lastchangedata ? <span className="font-medium">{String(row[col.key])}</span> : <span className="text-gray-400 italic">—</span>
                                             ) : col.key === 'history' ? (
@@ -436,7 +441,9 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
                                                 <td className="px-4 py-3">{item.type}</td>
                                                 <td className="px-4 py-3">{item.employee_name}</td>
                                                 <td className="px-4 py-3 whitespace-nowrap">{item.data}</td>
-                                                <td className="px-4 py-3 max-w-[220px] whitespace-normal break-words">{item.comment}</td>
+                                                <td className="px-4 py-3">
+                                                    {item.comment ? item.comment : '—'}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

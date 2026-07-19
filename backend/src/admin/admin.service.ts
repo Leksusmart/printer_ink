@@ -11,10 +11,6 @@ export class AdminService {
         private readonly cartridgesService: CartridgesService
     ) { }
 
-    async scrapCartridgeByGuid(guid: string) {
-        return await this.cartridgesService.changeStatusesTo([guid], 'Списан', 'NOW()');
-    }
-
     async getStats() {
         try {
             const query = `
@@ -109,6 +105,7 @@ export class AdminService {
                 c.model,
                 c.status,
                 c.isdefective,
+                c.comment,
                 le.fullname as lastchangeby,
                 TO_CHAR(c.lastchangedata, 'DD.MM.YY HH:MI') as lastchangedata
             FROM public.cartridges c
@@ -153,25 +150,126 @@ export class AdminService {
         return result.rows;
     }
 
-    async createCartridge(model: string, guid: string, status: string = 'Ожидает заправки', isdefective = false, adminId: number | null, comment: string) {
+    async createCartridge(model: string, guid: string, status: string = 'Ожидает заправки', isdefective = false, adminId: number | null, comment: string ) {
         if (!model?.trim() || !guid?.trim()) {
             throw new BadRequestException('Модель и GUID обязательны');
         }
 
-        const result = await this.databaseService.query(`
-            INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *
-        `, [
-            model.trim(),
-            guid.trim(),
-            status,
-            isdefective,
-            adminId,
-            comment
-        ]);
+        // 1. Начинаем транзакцию, чтобы все три операции выполнились атомарно
+        await this.databaseService.query('BEGIN');
 
-        return result.rows[0];
+        try {
+            // 2. Создаем сам картридж в таблице public.cartridges
+            const cartridgeResult = await this.databaseService.query(`
+                  INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment)
+                  VALUES ($1, $2, $3, $4, $5, $6)
+                  RETURNING *
+                `, [
+                model.trim(),
+                guid.trim(),
+                status,
+                isdefective,
+                adminId,
+                comment
+            ]);
+
+            const newCartridge = cartridgeResult.rows[0];
+
+            // 3. Создаем заявку с типом "Регистрация" в public.requests
+            const requestResult = await this.databaseService.query(`
+                  INSERT INTO public.requests (type, isdefective, status, employee, lastchangeby, comment)
+                  VALUES ($1, $2, $3, $4, $5, $6)
+                  RETURNING id;
+                `, [
+                'Регистрация',
+                isdefective,
+                'Создана',
+                adminId,
+                adminId,
+                comment ?? 'Администратор добавил картридж' // Комментарий к заявке
+            ]);
+
+            const requestId = requestResult.rows[0].id;
+
+            // 4. Связываем созданный картридж и заявку в public.requestslist
+            await this.databaseService.query(`
+              INSERT INTO public.requestslist (requestid, cartridgeid)
+              VALUES ($1, $2)
+            `, [requestId, newCartridge.id]);
+
+            // 5. Фиксируем транзакцию, если ошибок не возникло
+            await this.databaseService.query('COMMIT');
+
+            // Возвращаем созданный картридж
+            return newCartridge;
+
+        } catch (error) {
+            // Если что-то пошло не так, откатываем изменения в БД
+            await this.databaseService.query('ROLLBACK');
+            console.error("Ошибка при создании картриджа и заявки регистрации:", error);
+            throw error;
+        }
+    }
+
+    async scrapCartridgeByGuid(guid: string, adminId: number) {
+        if (!guid) {
+            throw new BadRequestException('GUID обязателен для списания');
+        }
+        if (!adminId) {
+            throw new BadRequestException('ID сотрудника обязателен для списания');
+        }
+
+        // 1. Сначала находим ID картриджа по его GUID, так как он нужен для таблицы requestslist
+        const cartridgeCheck = await this.databaseService.query(
+            `SELECT id FROM public.cartridges WHERE guid = $1`,
+            [guid]
+        );
+
+        if (cartridgeCheck.rows.length === 0) {
+            throw new NotFoundException(`Картридж с GUID ${guid} не найден`);
+        }
+
+        const cartridgeId = cartridgeCheck.rows[0].id;
+
+        // 2. Стартуем транзакцию
+        await this.databaseService.query('BEGIN');
+
+        try {
+            // 3. Создаем заявку с типом "Списание"
+            const requestResult = await this.databaseService.query(`
+              INSERT INTO public.requests (type, isdefective, status, employee, lastchangeby)
+              VALUES ($1, $2, $3, $4, $5)
+              RETURNING id, data;
+            `, [
+                'Списание',
+                true,
+                'Создана',
+                adminId,
+                adminId
+            ]);
+
+            const requestId = requestResult.rows[0].id;
+            const requestData = requestResult.rows[0].data;
+
+            // 4. Создаем запись в связующей таблице requestslist
+            await this.databaseService.query(`
+              INSERT INTO public.requestslist (requestid, cartridgeid)
+              VALUES ($1, $2)
+            `, [requestId, cartridgeId]);
+
+            // 5. Меняем статус картриджа
+            await this.cartridgesService.changeStatusesTo([guid], 'Списан', requestData, adminId);
+
+            // Фиксируем изменения
+            await this.databaseService.query('COMMIT');
+
+            return { success: true, message: `Картридж ${guid} успешно списан` };
+
+        } catch (error) {
+            await this.databaseService.query('ROLLBACK');
+            console.error(`Ошибка при списании картриджа ${guid}:`, error);
+            throw error;
+        }
     }
 
     async createEmployer(fullname: string, phone: string, role: string = 'User', password?: string) {

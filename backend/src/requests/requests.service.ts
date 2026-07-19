@@ -112,7 +112,7 @@ export class RequestsService {
 
             // 2. Если есть СУЩЕСТВУЮЩИЕ картриджи — обновляем их статус и привязываем к заявке
             if (existingGuids.length > 0) {
-                await this.cartridgesService.changeStatusesTo(existingGuids, cartridgeTargetStatus, requestData);
+                await this.cartridgesService.changeStatusesTo(existingGuids, cartridgeTargetStatus, requestData, employeeId, comment);
 
                 const linkExistingQuery = `
                     INSERT INTO public.requestslist (requestid, cartridgeid)

@@ -21,9 +21,7 @@ export class AdminController {
     }
 
     @Post('create-user')
-    async createEmployer(@Body() body: any) {
-        return this.adminService.createEmployer(body.fullname, body.phone, body.role, body.password);
-    }
+    async createEmployer(@Body() body: any) { return this.adminService.createEmployer(body.fullname, body.phone, body.role, body.password); }
 
     @Delete('delete-user')
     async deleteUser(@Body() body: { identifier: string | number; adminId: number; force?: boolean }) {
@@ -51,17 +49,10 @@ export class AdminController {
     }
 
     @Post('scrap-cartridge')
-    async scrapCartridge(@Body() body: { guid: string }) {
-        return this.adminService.scrapCartridgeByGuid(body.guid);
-    }
+    async scrapCartridge(@Body() body: { guid: string, adminId:number }) { return this.adminService.scrapCartridgeByGuid(body.guid, body.adminId); }
 
     @Get('settings')
-    async getSettings() {
-        return this.adminService.getSettings();
-    }
+    async getSettings() { return this.adminService.getSettings(); }
 
-    @Post('settings')
-    async updateSettings(@Body() body: any) {
-        return this.adminService.updateSettings(body);
-    }
+    @Post('settings') async updateSettings(@Body() body: any) { }
 }
