@@ -2,14 +2,17 @@
 import { useState, useMemo } from 'react';
 import { adminApi } from '../../api/adminApi';
 
+import CreateCartridgeModal from './CreateCartridgeModal';
+import DeleteCartridgeModal from './DeleteCartridgeModal';
+
 interface CartridgeRow {
     id: number;
     guid: string;
     model: string;
     status: string;
-    isdefective: boolean;
+    isdefective: boolean
+    lastchangeby?: string;
     lastchangedata?: string;
-    lastchangeby_name?: string;
 }
 
 interface RequestHistoryItem {
@@ -23,18 +26,22 @@ interface RequestHistoryItem {
 }
 
 interface CartridgesTableProps {
-    data: CartridgeRow[];
+    title: string;
+    tableData: CartridgeRow[];
     rowsCollapsedLimit?: number;
+    fetchAllData: () => Promise<void>;
 }
 
 type SortableKey = keyof CartridgeRow;
-// Колонки таблицы = реальные поля картриджа + служебная колонка-кнопка "history"
 type ColumnKey = SortableKey | 'history';
 
-export default function CartridgesTable({ data, rowsCollapsedLimit }: CartridgesTableProps) {
+export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, fetchAllData }: CartridgesTableProps) {
     const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'asc' | 'desc' } | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [openFilterMenu, setOpenFilterMenu] = useState<SortableKey | null>(null);
+
+    const [isCreateCartridgeModalOpen, setIsCreateCartridgeModalOpen] = useState(false);
+    const [isDeleteCartridgeModalOpen, setIsDeleteCartridgeModalOpen] = useState(false);
 
     const [requestsHistoryModal, setRequestsHistoryModal] = useState<{
         isOpen: boolean;
@@ -62,17 +69,19 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
     const [filters, setFilters] = useState<{
         model?: string;
         status?: string;
+        lastchangeby?: string;
         isdefective?: boolean;
     }>({});
 
     const uniqueValues = useMemo(() => {
-        const models = [...new Set(data.map(item => item.model).filter(Boolean))].sort();
-        const statuses = [...new Set(data.map(item => item.status).filter(Boolean))].sort();
-        return { models, statuses };
-    }, [data]);
+        const models = [...new Set(tableData.map(item => item.model).filter(Boolean))].sort();
+        const statuses = [...new Set(tableData.map(item => item.status).filter(Boolean))].sort();
+        const lastchangeemployers = [...new Set(tableData.map(item => item.lastchangeby).filter(Boolean))].sort();
+        return { models, statuses, lastchangeemployers };
+    }, [tableData]);
 
     const filteredAndSortedItems = useMemo(() => {
-        let result = [...data];
+        let result = [...tableData];
 
         if (filters.model) {
             result = result.filter(item => item.model === filters.model);
@@ -82,6 +91,9 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
         }
         if (filters.isdefective !== undefined) {
             result = result.filter(item => item.isdefective === filters.isdefective);
+        }
+        if (filters.lastchangeby) {
+            result = result.filter(item => item.lastchangeby === filters.lastchangeby);
         }
 
         if (sortConfig) {
@@ -97,7 +109,7 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
         }
 
         return result;
-    }, [data, filters, sortConfig]);
+    }, [tableData, filters, sortConfig]);
 
     const requestSort = (key: SortableKey) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -117,15 +129,17 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
         setOpenFilterMenu(null);
     };
 
-    const columnsWithFilter: SortableKey[] = ['model', 'status', 'isdefective'];
+    const columnsWithFilter: SortableKey[] = ['model', 'isdefective', 'status', 'lastchangeby' ];
 
     const columns: { key: ColumnKey; label: string }[] = [
         { key: 'id', label: '№' },
         { key: 'guid', label: 'GUID' },
         { key: 'model', label: 'Модель' },
         { key: 'isdefective', label: 'Дефект' },
-        { key: 'lastchangeby_name', label: 'Ответственный' },
-        { key: 'history', label: 'Заявки' },
+        { key: 'status', label: 'Статус' },
+        { key: 'lastchangeby', label: 'Ответственный' },
+        { key: 'lastchangedata', label: 'Изменён' },
+        { key: 'history', label: ' ' },
     ];
 
     const limit = rowsCollapsedLimit ?? 5;
@@ -134,11 +148,13 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
     // остальные — уже, чтобы освободить ему место.
     const columnWidthClass = (key: ColumnKey): string => {
         switch (key) {
-            case 'id': return 'w-12';
+            case 'id': return 'w-10';
             case 'guid': return 'w-[420px]';
             case 'model': return 'w-28';
-            case 'isdefective': return 'w-20';
-            case 'lastchangeby_name': return 'w-32';
+            case 'isdefective': return 'w-18';
+            case 'status': return 'w-32';
+            case 'lastchangeby': return 'w-32';
+            case 'lastchangedata': return 'w-28';
             case 'history': return 'w-28';
             default: return '';
         }
@@ -150,10 +166,41 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
 
     const hasMoreRows = filteredAndSortedItems.length > limit;
 
+    const formatFIO = (fullName: string): string => {
+        if (!fullName) return '';
+
+        // Разбиваем строку по пробелам и убираем лишние пробелы
+        const parts = fullName.trim().split(/\s+/);
+
+        // Если имя состоит только из одного слова (например, только Фамилия)
+        if (parts.length === 1) return parts[0];
+
+        const lastName = parts[0];
+        const firstNameLetter = parts[1] ? ` ${parts[1][0]}.` : '';
+        const middleNameLetter = parts[2] ? ` ${parts[2][0]}.` : '';
+
+        return `${lastName}${firstNameLetter}${middleNameLetter}`;
+    };
+
+
     return (
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">🖨️ Все картриджи</h3>
+                <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+                <div className="flex flex-wrap items-center gap-3 sm:mr-auto sm:ml-4 w-full sm:w-auto">
+                    <button
+                        onClick={() => setIsCreateCartridgeModalOpen(true)}
+                        className="flex-1 min-w-[160px] sm:flex-initial px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95"
+                    >
+                        Добавить картридж
+                    </button>
+                    <button
+                        onClick={() => setIsDeleteCartridgeModalOpen(true)}
+                        className="flex-1 min-w-[160px] sm:flex-initial px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-red-600 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                        Списать картридж
+                    </button>
+                </div>
                 {hasMoreRows && (
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
@@ -173,7 +220,9 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
                                 const hasFilter = !isActionColumn && columnsWithFilter.includes(col.key as SortableKey);
                                 const currentFilter = col.key === 'model' ? filters.model :
                                     col.key === 'status' ? filters.status :
-                                        col.key === 'isdefective' ? filters.isdefective : undefined;
+                                        col.key === 'isdefective' ? filters.isdefective :
+                                            col.key === 'lastchangeby' ? filters.lastchangeby :
+                                                undefined;
 
                                 const isSorted = sortConfig?.key === col.key;
 
@@ -262,6 +311,16 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
                                                         </div>
                                                     </>
                                                 )}
+
+                                                {col.key === 'lastchangeby' && uniqueValues.lastchangeemployers.map(l => (
+                                                    <div
+                                                        key={l}
+                                                        className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${filters.status === l ? 'bg-blue-50 text-blue-700' : ''}`}
+                                                        onClick={() => setFilter('lastchangeby', l)}
+                                                    >
+                                                        {l}
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
                                         </>
@@ -298,19 +357,10 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
                                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${row.status === 'Готов к выдаче' || row.status === 'Выдан' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
                                                     {row.status}
                                                 </span>
-                                            ) : col.key === 'lastchangeby_name' ? (
-                                                row.lastchangeby_name ? <span className="font-medium">{row.lastchangeby_name}</span> : <span className="text-gray-400 italic">—</span>
+                                            ) : col.key === 'lastchangeby' ? (
+                                                    row.lastchangeby ? <span className="font-medium">{formatFIO(row.lastchangeby)}</span> : <span className="text-gray-400 italic">—</span>
                                             ) : col.key === 'lastchangedata' ? (
-                                                row.lastchangedata ? (() => {
-                                                    const parsedDate = new Date(String(row.lastchangedata));
-                                                    if (isNaN(parsedDate.getTime())) return <span>{String(row.lastchangedata)}</span>;
-                                                    const day = String(parsedDate.getDate()).padStart(2, '0');
-                                                    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-                                                    const year = String(parsedDate.getFullYear()).slice(-2);
-                                                    const hours = String(parsedDate.getHours()).padStart(2, '0');
-                                                    const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
-                                                    return <span>{`${day}.${month}.${year} ${hours}:${minutes}`}</span>;
-                                                })() : <span className="text-gray-400 italic">—</span>
+                                                    row.lastchangedata ? <span className="font-medium">{String(row[col.key])}</span> : <span className="text-gray-400 italic">—</span>
                                             ) : col.key === 'history' ? (
                                                 <button
                                                     onClick={() => openRequestsHistory(row.guid)}
@@ -373,10 +423,9 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
                                     <thead className="sticky top-0 bg-gray-50">
                                         <tr>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">№</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600">Дата</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">Тип</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600">Статус</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">Кто создал</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600">Когда создал</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600">Комментарий</th>
                                         </tr>
                                     </thead>
@@ -384,10 +433,9 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
                                         {requestsHistoryModal.items.map((item) => (
                                             <tr key={item.id}>
                                                 <td className="px-4 py-3">{item.id}</td>
-                                                <td className="px-4 py-3 whitespace-nowrap">{item.data}</td>
                                                 <td className="px-4 py-3">{item.type}</td>
-                                                <td className="px-4 py-3">{item.status}</td>
                                                 <td className="px-4 py-3">{item.employee_name}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{item.data}</td>
                                                 <td className="px-4 py-3 max-w-[220px] whitespace-normal break-words">{item.comment}</td>
                                             </tr>
                                         ))}
@@ -398,6 +446,10 @@ export default function CartridgesTable({ data, rowsCollapsedLimit }: Cartridges
                     </div>
                 </div>
             )}
+
+            <CreateCartridgeModal isOpen={isCreateCartridgeModalOpen} onClose={() => setIsCreateCartridgeModalOpen(false)} onSuccess={fetchAllData} />
+            <DeleteCartridgeModal isOpen={isDeleteCartridgeModalOpen} onClose={() => setIsDeleteCartridgeModalOpen(false)} onSuccess={fetchAllData} />
+
         </div>
     );
 }

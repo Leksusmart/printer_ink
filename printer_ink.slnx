@@ -61,6 +61,7 @@
     <File Path="frontend/admin/app/dashboard/components/DashboardStats.tsx" />
     <File Path="frontend/admin/app/dashboard/components/DeleteCartridgeModal.tsx" />
     <File Path="frontend/admin/app/dashboard/components/DeleteUserModal.tsx" />
+    <File Path="frontend/admin/app/dashboard/components/EmployersTable.tsx" />
     <File Path="frontend/admin/app/dashboard/components/RequestsTable.tsx" />
     <File Path="frontend/admin/app/dashboard/components/SettingsModal.tsx" />
   </Folder>

@@ -6,24 +6,13 @@ export class AdminController {
     constructor(private readonly adminService: AdminService) { }
 
     // Эндпоинт для верхних карточек и блоков статистики
-    @Get('stats')
-    async getStats() {
-        return this.adminService.getStats();
-    }
+    @Get('stats') async getStats() { return this.adminService.getStats(); }
 
-    @Get('history') async getHistory() { return this.adminService.getHistoryLogs(); }
+    @Get('requests') async getRequests() { return this.adminService.getRequests(); }
 
-    // Объединённая вкладка "Заявки на заправку/ремонт"
-    @Get('refill-repair') async getRefillRepair() { return this.adminService.getRefillRepairRequests(); }
+    @Get('cartridges') async getCartridges() { return this.adminService.getCartridges(); }
 
-    // Вкладка "Заявки на приёмку"
-    @Get('receiving') async getReceiving() { return this.adminService.getReceivingRequests(); }
-
-    // Вкладка "Заявки на списание"
-    @Get('scrap-requests') async getScrapRequests() { return this.adminService.getScrapRequests(); }
-
-    // Вкладка "Заявки на получение"
-    @Get('issuance') async getIssuance() { return this.adminService.getIssuanceRequests(); }
+    @Get('employers') async getEmployers() { return this.adminService.getEmployers(); }
 
     // Картриджи (модель + GUID) конкретной заявки
     @Get('request/:id/cartridges')
@@ -55,14 +44,12 @@ export class AdminController {
         const generatedGuid = await this.adminService.getNewGUID();
         return { guid: generatedGuid };
     }
-    @Get('cartridges')
-    async getCartridges() {
-        return this.adminService.getCartridges();
-    }
+
     @Post('create-cartridge')
     async createCartridge(@Body() body: { model: string; guid: string; status: string; isdefective: boolean; adminId: number | null, comment: string }) {
         return this.adminService.createCartridge(body.model, body.guid, body.status, body.isdefective, body.adminId, body.comment);
     }
+
     @Post('scrap-cartridge')
     async scrapCartridge(@Body() body: { guid: string }) {
         return this.adminService.scrapCartridgeByGuid(body.guid);

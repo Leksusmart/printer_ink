@@ -5,7 +5,7 @@ import { adminApi } from '../../api/adminApi';
 interface AdminRequestRow {
     id: number;
     data: string;
-    employee_name: string;
+    lastchangeby: string;
     type: string;
     cartridges_count: number;
     isdefective: boolean;
@@ -25,24 +25,15 @@ interface CartridgeDetail {
 interface RequestsTableProps {
     title: string;
     tableData: AdminRequestRow[];
-    showType?: boolean;
-    showStatus?: boolean;
-    showDefect?: boolean;
     rowsCollapsedLimit?: number;
 }
 
 type SortableKey = keyof AdminRequestRow;
 
-export default function RequestsTable({ title, tableData, showType, showDefect, rowsCollapsedLimit }: RequestsTableProps) {
+export default function RequestsTable({ title, tableData, rowsCollapsedLimit }: RequestsTableProps) {
     const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'asc' | 'desc' } | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [openFilterMenu, setOpenFilterMenu] = useState<SortableKey | null>(null);
-
-    const [filters, setFilters] = useState<{
-        employee_name?: string;
-        type?: string;
-        isdefective?: boolean;
-    }>({});
 
     const [cartridgeDetailsModal, setCartridgeDetailsModal] = useState<{
         isOpen: boolean;
@@ -51,6 +42,12 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
         error: string;
         items: CartridgeDetail[];
     }>({ isOpen: false, requestId: null, isLoading: false, error: '', items: [] });
+
+    const [filters, setFilters] = useState<{
+        lastchangeby?: string;
+        type?: string;
+        isdefective?: boolean;
+    }>({});
 
     const formatFIO = (fullName: string): string => {
         if (!fullName) return '';
@@ -84,7 +81,7 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
     };
 
     const uniqueValues = useMemo(() => {
-        const employees = [...new Set(tableData.map(item => item.employee_name).filter(Boolean))].sort();
+        const employees = [...new Set(tableData.map(item => item.lastchangeby).filter(Boolean))].sort();
         const types = [...new Set(tableData.map(item => item.type).filter(Boolean))].sort();
         return { employees, types };
     }, [tableData]);
@@ -94,8 +91,8 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
         let result = [...tableData];
 
         // Применяем фильтры
-        if (filters.employee_name) {
-            result = result.filter(item => item.employee_name === filters.employee_name);
+        if (filters.lastchangeby) {
+            result = result.filter(item => item.lastchangeby === filters.lastchangeby);
         }
         if (filters.type) {
             result = result.filter(item => item.type === filters.type);
@@ -136,15 +133,15 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
         setOpenFilterMenu(null);
     };
 
-    const columnsWithFilter: SortableKey[] = ['employee_name', 'type', 'isdefective'];
+    const columnsWithFilter: SortableKey[] = ['lastchangeby', 'type', 'isdefective'];
 
     const columns: { key: SortableKey; label: string }[] = [
         { key: 'id', label: '№' },
         { key: 'data', label: 'Дата создания' },
-        { key: 'employee_name', label: 'Ответственный' },
-        ...(showType ? [{ key: 'type' as SortableKey, label: 'Тип' }] : []),
+        { key: 'lastchangeby', label: 'Ответственный' },
+        { key: 'type', label: 'Тип' },
         { key: 'cartridges_count', label: 'Картриджи' },
-        ...(showDefect ? [{ key: 'isdefective' as SortableKey, label: 'Дефект' }] : []),
+        { key: 'isdefective', label: 'Дефект' },
         { key: 'comment', label: 'Комментарий' },
     ];
 
@@ -176,7 +173,7 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
                         <tr>
                             {columns.map((col) => {
                                 const hasFilter = columnsWithFilter.includes(col.key);
-                                const currentFilter = col.key === 'employee_name' ? filters.employee_name :
+                                const currentFilter = col.key === 'lastchangeby' ? filters.lastchangeby :
                                     col.key === 'type' ? filters.type :
                                         col.key === 'isdefective' ? filters.isdefective : undefined;
 
@@ -218,11 +215,11 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
                                                 Все значения
                                             </div>
 
-                                                {col.key === 'employee_name' && uniqueValues.employees.map(name => (
+                                                {col.key === 'lastchangeby' && uniqueValues.employees.map(name => (
                                                     <div
                                                         key={name}
-                                                        className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${filters.employee_name === name ? 'bg-blue-50 text-blue-700' : ''}`}
-                                                        onClick={() => setFilter('employee_name', name)}
+                                                        className={`px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer ${filters.lastchangeby === name ? 'bg-blue-50 text-blue-700' : ''}`}
+                                                        onClick={() => setFilter('lastchangeby', name)}
                                                     >
                                                         {name}
                                                     </div>
@@ -294,7 +291,7 @@ export default function RequestsTable({ title, tableData, showType, showDefect, 
                                                 ) : (
                                                     <span className="rounded bg-green-100 px-3 py-1 text-sm font-medium text-green-700">Нет</span>
                                                 )
-                                            ) : col.key === 'employee_name' ? (
+                                            ) : col.key === 'lastchangeby' ? (
                                                 row[col.key] ? (
                                                     <span className="font-medium">{formatFIO(row[col.key])}</span>
                                                 ) : (

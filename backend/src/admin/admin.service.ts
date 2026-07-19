@@ -66,81 +66,41 @@ export class AdminService {
 
     private getBaseRequestQuery(whereClause: string = ''): string {
         return `
-  SELECT 
-    r.id, 
-    TO_CHAR(r.data, 'DD.MM.YYYY HH24:MI') as data,
-    e.fullname as employee_name, r.type, r.status,
-    COUNT(rl.cartridgeid)::int as cartridges_count,
-    r.isdefective, COALESCE(r.comment, '') as comment,
-    le.fullname as lastchangeby_name,
-    TO_CHAR(r.lastchangedata, 'DD.MM.YYYY HH24:MI') as lastchangedata
-  FROM public.requests r
-  LEFT JOIN public.employers e ON r.employee = e.id
-  LEFT JOIN public.requestslist rl ON r.id = rl.requestid
-  LEFT JOIN public.employers le ON r.lastchangeby = le.id
-  ${whereClause}
-  GROUP BY 
-    r.id, 
-    r.data, 
-    e.fullname, 
-    r.type, 
-    r.status, 
-    r.isdefective, 
-    r.comment, 
-    le.fullname, 
-    r.lastchangedata
-  ORDER BY r.data DESC
-`;
+          SELECT 
+            r.id, 
+            TO_CHAR(r.data, 'DD.MM.YYYY HH24:MI') as data,
+            e.fullname as employee_name, r.type, r.status,
+            COUNT(rl.cartridgeid)::int as cartridges_count,
+            r.isdefective, COALESCE(r.comment, '') as comment,
+            le.fullname as lastchangeby,
+            TO_CHAR(r.lastchangedata, 'DD.MM.YYYY HH24:MI') as lastchangedata
+          FROM public.requests r
+          LEFT JOIN public.employers e ON r.employee = e.id
+          LEFT JOIN public.requestslist rl ON r.id = rl.requestid
+          LEFT JOIN public.employers le ON r.lastchangeby = le.id
+          ${whereClause}
+          GROUP BY 
+            r.id, 
+            r.data, 
+            e.fullname, 
+            r.type, 
+            r.status, 
+            r.isdefective, 
+            r.comment, 
+            le.fullname, 
+            r.lastchangedata
+          ORDER BY r.data DESC
+        `;
     }
 
-    // История абсолютно всех заявок
-    async getHistoryLogs() {
+    // Список всех заявок для админской вкладки "Заявки"
+    async getRequests() {
         const query = this.getBaseRequestQuery();
         const result = await this.databaseService.query(query);
         return result.rows;
     }
 
-    // Объединённые заявки на заправку и ремонт (одна вкладка на фронте)
-    async getRefillRepairRequests() {
-        const filter = `
-            WHERE r.type = 'Заправка/ремонт'
-        `;
-        const query = this.getBaseRequestQuery(filter);
-        const result = await this.databaseService.query(query);
-        return result.rows;
-    }
-
-    // Заявки на приёмку
-    async getReceivingRequests() {
-        const filter = `
-            WHERE r.type = 'Приёмка'
-        `;
-        const query = this.getBaseRequestQuery(filter);
-        const result = await this.databaseService.query(query);
-        return result.rows;
-    }
-
-    // Заявки на списание
-    async getScrapRequests() {
-        const filter = `
-            WHERE r.type = 'Списание'
-        `;
-        const query = this.getBaseRequestQuery(filter);
-        const result = await this.databaseService.query(query);
-        return result.rows;
-    }
-
-    // Заявки на получение
-    async getIssuanceRequests() {
-        const filter = `
-            WHERE r.type = 'Получение'
-        `;
-        const query = this.getBaseRequestQuery(filter);
-        const result = await this.databaseService.query(query);
-        return result.rows;
-    }
-
-    // Список всех картриджей со всеми параметрами — для админской вкладки "Картриджи"
+    // Список всех картриджей для админской вкладки "Картриджи"
     async getCartridges() {
         const query = `
             SELECT 
@@ -149,11 +109,26 @@ export class AdminService {
                 c.model,
                 c.status,
                 c.isdefective,
-                le.fullname as lastchangeby_name,
+                le.fullname as lastchangeby,
                 TO_CHAR(c.lastchangedata, 'DD.MM.YY HH:MI') as lastchangedata
             FROM public.cartridges c
             LEFT JOIN public.employers le ON c.lastchangeby = le.id
             ORDER BY c.id DESC
+        `;
+        const result = await this.databaseService.query(query);
+        return result.rows;
+    }
+
+    // Список всех сотрудников для админской вкладки "Сотрудники"
+    async getEmployers() {
+        const query = `
+            SELECT 
+                id,
+                phone,
+                fullname,
+                role
+            FROM public.employers
+            ORDER BY id DESC
         `;
         const result = await this.databaseService.query(query);
         return result.rows;

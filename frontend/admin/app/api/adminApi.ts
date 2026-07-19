@@ -54,39 +54,21 @@ export const adminApi = {
         return res.json();
     },
 
-    async getHistory() {
-        const res = await fetch(`${API_BASE}/history`);
-        if (!res.ok) throw new Error('Ошибка загрузки истории');
-        return res.json();
-    },
-
-    async getRefillRepairRequests() {
-        const res = await fetch(`${API_BASE}/refill-repair`);
-        if (!res.ok) throw new Error('Ошибка загрузки заявок на заправку/ремонт');
-        return res.json();
-    },
-
-    async getReceivingRequests() {
-        const res = await fetch(`${API_BASE}/receiving`);
-        if (!res.ok) throw new Error('Ошибка загрузки заявок на приёмку');
-        return res.json();
-    },
-
-    async getScrapRequests() {
-        const res = await fetch(`${API_BASE}/scrap-requests`);
-        if (!res.ok) throw new Error('Ошибка загрузки заявок на списание');
-        return res.json();
-    },
-
-    async getIssuanceRequests() {
-        const res = await fetch(`${API_BASE}/issuance`);
-        if (!res.ok) throw new Error('Ошибка загрузки заявок на получение');
+    async getRequests() {
+        const res = await fetch(`${API_BASE}/requests`);
+        if (!res.ok) throw new Error('Ошибка загрузки заявок');
         return res.json();
     },
 
     async getCartridges() {
         const res = await fetch(`${API_BASE}/cartridges`);
         if (!res.ok) throw new Error('Ошибка загрузки картриджей');
+        return res.json();
+    },
+
+    async getEmployers() {
+        const res = await fetch(`${API_BASE}/employers`);
+        if (!res.ok) throw new Error('Ошибка загрузки сотрудников');
         return res.json();
     },
 
