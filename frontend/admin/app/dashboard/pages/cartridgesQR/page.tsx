@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Один созданный картридж, для которого нужно показать QR-код
 interface GeneratedCartridge {
     guid: string;
     model: string;
@@ -11,8 +10,6 @@ interface GeneratedCartridge {
 }
 
 // Рисуем QR-код через бесплатный сервис goqr.me — картинка по URL, без установки библиотек.
-// Если в проекте уже используется своя генерация QR (например, qrcode.react), можно заменить
-// эту функцию на локальный рендер без изменения остальной логики страницы.
 const qrImageUrl = (data: string) =>
     `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(data)}`;
 
@@ -54,7 +51,7 @@ function PrintContent() {
                         onClick={() => router.push('/dashboard')}
                         className="text-xs text-gray-400 hover:text-blue-500 font-medium tracking-wide uppercase transition-colors duration-200 flex items-center gap-1"
                     >
-                        ← Вернуться к заявкам
+                        ← Вернуться к Админ-панели
                     </button>
 
                     <h1 className="text-xl font-normal text-gray-800">QR-коды новых картриджей</h1>

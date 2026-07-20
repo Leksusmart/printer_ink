@@ -66,14 +66,13 @@ ALTER SEQUENCE public.employers_id_seq OWNED BY public.employers.id;
 
 CREATE TABLE public.requests (
     id integer NOT NULL,
-    type character varying(20) NOT NULL,
+    type character varying(16) NOT NULL,
 	isDefective bool,
-    status character varying(20),
     data timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
     employee integer,
     lastchangedata timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Moscow'),
     lastchangeby integer,
-    comment character varying(255)
+    comment character varying(100)
 );
 
 ALTER TABLE public.requests OWNER TO postgres;

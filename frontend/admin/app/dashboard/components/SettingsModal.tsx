@@ -10,7 +10,7 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsModalProps) {
     const [refillthreshold, setrefillthreshold] = useState(10);
-    const [rowsCollapsedLimit, setRowsCollapsedLimit] = useState(5);
+    const [rowscollapsedlimit, setrowscollapsedlimit] = useState(5);
 
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -25,7 +25,7 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
             if (res.ok) {
                 const data = await res.json();
                 setrefillthreshold(data.refillthreshold ?? 10);
-                setRowsCollapsedLimit(data.rowscollapsedlimit ?? 5);
+                setrowscollapsedlimit(data.rowscollapsedlimit ?? 5);
             } else {
                 throw new Error('Ошибка получения настроек');
             }
@@ -45,19 +45,24 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     refillthreshold,
-                    rowsCollapsedLimit
+                    rowscollapsedlimit
                 })
             });
 
-            if (res.ok) {
+            if (!res.ok) {
+                throw new Error(`Сервер вернул статус ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            if (data.success) {
                 setMessage('✅ Настройки сохранены!');
                 onSuccess();
                 setTimeout(() => {
                     onClose();
-                    window.location.reload();   // ← Полное обновление страницы
                 }, 1000);
             } else {
-                throw new Error('Ошибка сохранения');
+                throw new Error('Сервер отказал в сохранении');
             }
         } catch (err) {
             setMessage('❌ Ошибка: ' + (err as Error).message);
@@ -92,8 +97,8 @@ export default function SettingsModal({ isOpen, onClose, onSuccess }: SettingsMo
                         <label className="font-medium">Лимит строк в свернутой таблице:</label>
                         <input
                             type="number"
-                            value={rowsCollapsedLimit}
-                            onChange={(e) => setRowsCollapsedLimit(Number(e.target.value))}
+                            value={rowscollapsedlimit}
+                            onChange={(e) => setrowscollapsedlimit(Number(e.target.value))}
                             className="w-24 text-center border rounded-lg px-4 py-2 text-lg font-semibold"
                             min="1"
                         />

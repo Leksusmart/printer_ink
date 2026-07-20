@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { adminApi } from '../../api/adminApi';
 
 import CreateCartridgeModal from './CreateCartridgeModal';
@@ -249,7 +249,7 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
                         onClick={() => setIsCreateCartridgeModalOpen(true)}
                         className="flex-1 min-w-[160px] sm:flex-initial px-5 py-2.5 bg-white/80 hover:bg-white backdrop-blur-md border border-white/50 shadow-sm text-slate-700 rounded-xl font-medium transition-all active:scale-95"
                     >
-                        Добавить картридж
+                        Добавить картриджи
                     </button>
                     <button
                         onClick={() => setIsDeleteCartridgeModalOpen(true)}
@@ -559,6 +559,7 @@ export default function CartridgesTable({ title, tableData, rowsCollapsedLimit, 
                             onChange={(e) => setStatusModal(prev => ({ ...prev, comment: e.target.value }))}
                             disabled={statusModal.isSubmitting}
                             rows={3}
+                            maxLength={100}
                             className="mb-5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                         />
 

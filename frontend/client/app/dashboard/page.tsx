@@ -1,10 +1,8 @@
 ﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
 import QRScanner from './components/QRScanner';
 interface CartridgeItem {
-    mode: 'guid' | 'manual';
     guid: string;
     model: string;
     status: string;
@@ -22,7 +20,6 @@ interface Employer {
     role: string;
 }
 
-// Тип операции — это не "выбор", а тип заявки, который отправляется на бэкенд (см. baseData.type в handleSubmit)
 type OperationType = 'ПРИЕМКА' | 'ПОЛУЧЕНИЕ' | 'ЗАПРАВКА_РЕМОНТ';
 
 // Человекочитаемое значение поля type, которое уходит в заявку на бэкенд
@@ -33,7 +30,7 @@ const OPERATION_TYPE_LABEL: Record<OperationType, string> = {
 };
 
 const emptyRowForType = (_type: OperationType): CartridgeItem => ({
-    mode: 'guid', guid: '', model: '', status: '', comment: '', count: '', isDefective: false, isResolved: false, lookupError: ''
+    guid: '', model: '', status: '', comment: '', count: '', isDefective: false, isResolved: false, lookupError: ''
 });
 
 const qrImageUrl = (data: string) =>
@@ -44,7 +41,7 @@ function DashboardContent() {
     const router = useRouter();
 
     const [currentUser, setCurrentUser] = useState<Employer | null>(null);
-    const [availableModels, setAvailableModels] = useState<string[]>([]);
+    const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
     const [operationType, setOperationType] = useState<OperationType>('ПРИЕМКА');
     const [cartridges, setCartridges] = useState<CartridgeItem[]>([emptyRowForType('ПРИЕМКА')]);
@@ -64,7 +61,7 @@ function DashboardContent() {
     };
 
     const isFormValid = cartridges.every((item) =>
-        item.mode === 'guid' ? item.isResolved : item.model.trim() !== ''
+        item.isResolved
     );
 
     const openScannerForRow = (index: number) => {
@@ -89,7 +86,6 @@ function DashboardContent() {
         const updatedCartridges = [...cartridges];
         updatedCartridges[activeScanRowIndex] = {
             ...updatedCartridges[activeScanRowIndex],
-            mode: 'guid',
             guid: cleanGuid,
             lookupError: ''
         };
@@ -106,16 +102,31 @@ function DashboardContent() {
             try {
                 setIsLoading(true);
                 setError('');
-                const session = localStorage.getItem('client_session');
-                if (!session) {
+                const sessionUser = localStorage.getItem('client_session');
+                const sessionAdmin = localStorage.getItem('admin_session');
+                if (!sessionUser && !sessionAdmin) {
                     router.push('/');
                     return;
                 }
 
                 try {
-                    const user = JSON.parse(session);
-                    userPhone = user.phone;
-                } catch (e) {
+                    if (sessionUser) {
+                        const user = JSON.parse(sessionUser);
+                        setIsAdmin(false);
+                        userPhone = user.phone;
+                    } else if (sessionAdmin) {
+                        const admin = JSON.parse(sessionAdmin);
+                        setIsAdmin(true);
+                        userPhone = admin.phone;
+                    }
+                    console.log("Текущий статус админа:", isAdmin, "Тип:", typeof isAdmin);
+
+                } catch (parseError) {
+                    router.push('/');
+                    return;
+                }
+
+                if (!userPhone) {
                     router.push('/');
                     return;
                 }
@@ -130,16 +141,6 @@ function DashboardContent() {
                 const employerData: Employer = await employerResponse.json();
                 setCurrentUser(employerData);
 
-                // Загрузка моделей
-                const cartridgesResponse = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/cartridges`);
-                if (!cartridgesResponse.ok) {
-                    throw new Error('Не удалось получить список картриджей');
-                }
-
-                const data = await cartridgesResponse.json();
-                const models = [...new Set<string>(data.map((c: any) => c.model))];
-                setAvailableModels(models);
-
             } catch (err) {
                 setError((err as Error).message || 'Ошибка загрузки');
             } finally {
@@ -152,7 +153,7 @@ function DashboardContent() {
 
     useEffect(() => {
         const rowIndexToCheck = cartridges.findIndex(
-            (item) => item.mode === 'guid' && item.guid.trim() !== '' && !item.isResolved && !item.lookupError
+            (item) => item.guid.trim() !== '' && !item.isResolved && !item.lookupError
         );
 
         if (rowIndexToCheck !== -1 && cartridges[rowIndexToCheck].guid.length === 36) {
@@ -179,34 +180,6 @@ function DashboardContent() {
     const handleOperationTypeChange = (type: OperationType) => {
         setOperationType(type);
         setCartridges([emptyRowForType(type)]);
-    };
-
-    // Переключить строку в ручной режим ("на картридже нет GUID/QR") — доступно только для ПРИЕМКИ
-    const switchToManual = (index: number) => {
-        const updated = [...cartridges];
-        updated[index] = {
-            ...updated[index],
-            mode: 'manual',
-            guid: '',
-            status: '',
-            isResolved: false,
-            lookupError: '',
-        };
-        setCartridges(updated);
-    };
-
-    // Вернуть строку в режим сканирования GUID
-    const switchToGuid = (index: number) => {
-        const updated = [...cartridges];
-        updated[index] = {
-            ...updated[index],
-            mode: 'guid',
-            model: '',
-            count: '',
-            isResolved: false,
-            lookupError: '',
-        };
-        setCartridges(updated);
     };
 
     // Сбросить найденный (но невалидный) GUID, чтобы ввести другой
@@ -293,7 +266,7 @@ function DashboardContent() {
             }
 
             const isDuplicateInRequest = cartridges.some(
-                (c, i) => i !== index && c.mode === 'guid' && c.isResolved && c.guid === guidValue
+                (c, i) => i !== index && c.isResolved && c.guid === guidValue
             );
 
             if (isDuplicateInRequest) {
@@ -344,9 +317,8 @@ function DashboardContent() {
             return;
         }
 
-        // Проверка дубликатов среди отсканированных картриджей
         const resolvedGuids = cartridges
-            .filter(item => item.mode === 'guid' && item.guid)
+            .filter(item => item.guid)
             .map(item => item.guid);
 
         const hasDuplicates = new Set(resolvedGuids).size !== resolvedGuids.length;
@@ -356,58 +328,47 @@ function DashboardContent() {
         }
 
         // Собираем валидные данные с формы
-        const manualItems = cartridges.filter(item => item.mode === 'manual' && item.model.trim() && Number(item.count) > 0);
-        const scannedItems = cartridges.filter(item => item.mode === 'guid' && item.guid && !item.lookupError);
+        const scannedItems = cartridges.filter(item => item.guid && !item.lookupError);
 
-        if (manualItems.length === 0 && scannedItems.length === 0) {
+        if (scannedItems.length === 0) {
             return;
         }
 
         const isPriemka = operationType === 'ПРИЕМКА';
 
         const healthyScanned = scannedItems.filter(item => !isPriemka || !item.isDefective);
-        const healthyManual = manualItems.filter(item => !isPriemka || !item.isDefective);
 
         const defectiveScanned = isPriemka ? scannedItems.filter(item => item.isDefective) : [];
-        const defectiveManual = isPriemka ? manualItems.filter(item => item.isDefective) : [];
 
         const requestsPayloads: any[] = [];
 
         // Функция для сборки единого комбинированного пакета
-        const buildPayload = (scanned: typeof scannedItems, manual: typeof manualItems, isDefective: boolean) => ({
+        const buildPayload = (scanned: typeof scannedItems, isDefective: boolean) => ({
             type: OPERATION_TYPE_LABEL[operationType],
             isDefective,
             EmployeeID: currentUser.id,
             comment: comment.trim(),
-            guids: scanned.map(item => item.guid), // Существующие GUID
-            newCartridges: manual.map(item => ({   // Новые картриджи (модель + количество)
-                model: item.model,
-                amount: Number(item.count)
-            }))
+            guids: scanned.map(item => item.guid),
         });
 
-        if (healthyScanned.length > 0 || healthyManual.length > 0) {
+        if (healthyScanned.length > 0) {
             requestsPayloads.push({
-                payload: buildPayload(healthyScanned, healthyManual, false),
-                manualSource: healthyManual // сохраняем ссылку для связи модели и сгенерированных GUID
+                payload: buildPayload(healthyScanned, false),
             });
         }
 
-        if (defectiveScanned.length > 0 || defectiveManual.length > 0) {
+        if (defectiveScanned.length > 0) {
             requestsPayloads.push({
-                payload: buildPayload(defectiveScanned, defectiveManual, true),
-                manualSource: defectiveManual
+                payload: buildPayload(defectiveScanned, true),
             });
         }
-
-        let manuallyCreatedCartridges: { guid: string; model: string; isDefective: boolean }[] = [];
 
         try {
             const url = `${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/requests`;
 
             // Отправляем запросы (максимум 2 параллельных fetch-запроса)
             const responses = await Promise.all(
-                requestsPayloads.map(async ({ payload, manualSource }) => {
+                requestsPayloads.map(async ({ payload }) => {
                     const res = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -419,24 +380,6 @@ function DashboardContent() {
                     if (!result.success) {
                         throw new Error(`Ошибка сервера`);
                     }
-
-                    if (Array.isArray(result.GUIDs) && result.GUIDs.length > 0) {
-                        // Распределяем вернувшиеся GUID-ы обратно по моделям из этой группы
-                        let guidIndex = 0;
-                        manualSource.forEach((item: any) => {
-                            const amount = Number(item.count);
-                            for (let i = 0; i < amount; i++) {
-                                if (result.GUIDs[guidIndex]) {
-                                    manuallyCreatedCartridges.push({
-                                        guid: result.GUIDs[guidIndex],
-                                        model: item.model,
-                                        isDefective: payload.isDefective
-                                    });
-                                    guidIndex++;
-                                }
-                            }
-                        });
-                    }
                     return result;
                 })
             );
@@ -444,16 +387,11 @@ function DashboardContent() {
             // Очищаем форму при успехе
             setCartridges([emptyRowForType(operationType)]);
             setComment('');
-
-            // Редирект на QR-коды, если создавались новые картриджи
-            if (manuallyCreatedCartridges.length > 0) {
-                sessionStorage.removeItem('generatedCartridges');
-                sessionStorage.setItem('generatedCartridges', JSON.stringify(manuallyCreatedCartridges));
-                router.push(`/dashboard/pages/cartridgesQR`);
-            } else {
-                alert('Принято!');
-            }
-
+            localStorage.removeItem('client_session');
+            localStorage.removeItem('admin_session');
+            alert("Заявка принята!");
+            router.push('/');
+            return;
         } catch (err) {
             console.error('Ошибка отправки сгруппированных заявок:', err);
             alert(`Ошибка: ${(err as Error).message}`);
@@ -495,16 +433,6 @@ function DashboardContent() {
                     >
                         ← Выйти из системы
                     </button>
-
-                    {cartridges.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => router.push('/dashboard/pages/cartridgesQR')}
-                            className="text-xs text-gray-400 hover:text-red-500 font-medium tracking-wide uppercase transition-colors duration-200 flex items-center gap-1"
-                        >
-                            Посмотреть созданные QR →
-                        </button>
-                    )}
                 </div>
 
                 <div className="relative">
@@ -521,13 +449,13 @@ function DashboardContent() {
                     >
                         ПОЛОЖИТЬ
                     </button>
-                    <button
+                    {isAdmin && (<button
                         type="button"
                         onClick={() => handleOperationTypeChange('ЗАПРАВКА_РЕМОНТ')}
                         className={`flex-1 py-2 text-xs font-bold tracking-wider transition-colors ${operationType === 'ЗАПРАВКА_РЕМОНТ' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}
                     >
                         ЗАПРАВИТЬ И ОТРЕМОНТИРОВАТЬ
-                    </button>
+                    </button>)}
                     <button
                         type="button"
                         onClick={() => handleOperationTypeChange('ПОЛУЧЕНИЕ')}
@@ -541,7 +469,7 @@ function DashboardContent() {
                     {cartridges.map((item, index) => (
                         <div key={index} className="space-y-3 rounded border border-dashed border-gray-200 bg-gray-50/50 p-3">
 
-                            {item.mode === 'guid' ? (
+                            
                                 <>
                                     <div className="flex gap-2">
                                         <button
@@ -549,7 +477,7 @@ function DashboardContent() {
                                             title={item.model ? "Пересканировать QR-код" : "Нажмите чтобы начать сканировать QR картриджа"}
                                             onClick={() => openScannerForRow(index)}
                                             className={`flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded transition-colors
-        ${item.model
+                                                ${item.model
                                                     ? "border border-transparent bg-transparent" // Картинка без рамок, когда картридж НАЙДЕН
                                                     : "border border-blue-500 bg-blue-50 text-sm font-bold text-blue-600 hover:bg-blue-100 active:bg-blue-200" // Синяя кнопка во время ввода/сканирования
                                                 }`}
@@ -628,7 +556,7 @@ function DashboardContent() {
                                                                 const updated = [...cartridges];
 
                                                                 const isDuplicate = cartridges.some(
-                                                                    (c, i) => i !== index && c.mode === 'guid' && c.guid.trim() === value && value !== ''
+                                                                    (c, i) => i !== index&& c.guid.trim() === value && value !== ''
                                                                 );
                                                                 if (isDuplicate) {
                                                                     showToast('Этот картридж уже добавлен в заявку!');
@@ -636,7 +564,6 @@ function DashboardContent() {
                                                                     // Сбрасываем текущую строку, чтобы не плодить дубликаты
                                                                     updated[index] = {
                                                                         ...updated[index],
-                                                                        mode: 'guid',
                                                                         guid: '',
                                                                         model: '',
                                                                         status: '',
@@ -648,7 +575,6 @@ function DashboardContent() {
                                                                 }
                                                                 updated[index] = {
                                                                     ...updated[index],
-                                                                    mode: 'guid',
                                                                     guid: value,
                                                                     lookupError: ''
                                                                 };
@@ -670,67 +596,7 @@ function DashboardContent() {
                                             )}
                                         </div>
                                     </div>
-
-                                    {operationType === 'ПРИЕМКА' && (
-                                        <button
-                                            type="button"
-                                            onClick={() => switchToManual(index)}
-                                            className="text-xs text-blue-500 underline underline-offset-2"
-                                        >
-                                            На картридже нет ни GUID ни QR — ввести вручную
-                                        </button>
-                                    )}
                                 </>
-                            ) : (
-                                <>
-                                    <select
-                                        value={item.model}
-                                        onChange={(e) => updateCartridge(index, 'model', e.target.value)}
-                                        required
-                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 bg-white"
-                                    >
-                                        <option value="">Выберите картридж</option>
-                                        {availableModels.map((m) => <option key={m} value={m}>{m}</option>)}
-                                    </select>
-
-                                    <input
-                                        type="number"
-                                        placeholder="Введите количество картриджей"
-                                        value={item.count}
-                                        onChange={(e) => updateCartridge(index, 'count', e.target.value)}
-                                        required
-                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 placeholder-gray-400"
-                                    />
-
-                                    <div className="space-y-1.5">
-                                        <label className="block text-sm text-gray-700">Картриджи исправны?</label>
-                                        <div className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => updateCartridge(index, 'isDefective', false)}
-                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${!item.isDefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
-                                            >
-                                                ДА
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => updateCartridge(index, 'isDefective', true)}
-                                                className={`px-4 py-1.5 text-xs font-bold rounded border ${item.isDefective ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
-                                            >
-                                                НЕТ
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => switchToGuid(index)}
-                                        className="text-xs text-blue-500 underline underline-offset-2"
-                                    >
-                                        Вернуться к сканированию GUID
-                                    </button>
-                                </>
-                            )}
 
                             {cartridges.length > 1 && (
                                 <div className="flex justify-end pt-1">
@@ -767,6 +633,7 @@ function DashboardContent() {
                         rows={2}
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
+                        maxLength={100}
                         className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 placeholder-gray-400 resize-none"
                     />
 

@@ -6,7 +6,6 @@ export interface Request {
     id: number;
     type: string;
     isdefective: boolean;
-    status: string;
     data: Date;
     employee: number;
     lastchangedata: Date;
@@ -57,7 +56,6 @@ export class RequestsService {
             TO_CHAR(r.data, 'DD.MM.YY HH24:MI') as data,
             e.fullname as employee_name,
             r.type,
-            r.status,
             r.isdefective,
             COALESCE(r.comment, '') as comment,
             le.fullname as lastchangeby_name,
@@ -75,14 +73,18 @@ export class RequestsService {
 
     async createRequest(data: any): Promise<{ success: boolean; cartridgesAmount: number; GUIDs: string[] }> {
         try {
-            const requestType = data.type; // 'Приёмка', 'Заправка/ремонт', 'Получение'
+            const requestType = data.type; // 'Приёмка', 'Заправка/ремонт', 'Получение'  и т.д.
+            const isRequestDefective = !!data.isDefective;
+            const cartridgeStatus = data.status;
             const employeeId = data.EmployeeID;
             const comment = data.comment || '';
-            const isRequestDefective = !!data.isDefective;
+            
 
             // Определяем статусы
             let cartridgeTargetStatus = '';
-            if (requestType === 'Приёмка') {
+            if (cartridgeStatus) {
+                cartridgeTargetStatus = cartridgeStatus;
+            } else if (requestType === 'Приёмка') {
                 cartridgeTargetStatus = isRequestDefective ? 'Ожидает ремонта' : 'Ожидает заправки';
             } else if (requestType === 'Заправка/ремонт') {
                 cartridgeTargetStatus = 'Готов к выдаче';
@@ -91,7 +93,7 @@ export class RequestsService {
             }
 
             const existingGuids = data.guids || [];
-            const newCartridgesList = data.newCartridges || []; // [{ model: 'HP', amount: 2 }]
+            const newCartridges = data.newCartridges; // { model: 'HP', amount: 2 }
 
             // Массив, в который мы соберем ВСЕ сгенерированные GUID для этой заявки
             let allGeneratedGuids: string[] = [];
@@ -99,12 +101,12 @@ export class RequestsService {
             // 1. Создаем саму заявку в БД
             const insertRequestQuery = `
                 INSERT INTO public.requests 
-                    (type, isdefective, status, employee, lastchangeby, comment)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                    (type, isdefective, employee, lastchangeby, comment)
+                VALUES ($1, $2, $3, $4, $5)
                 RETURNING id, data;
             `;
             const requestResult = await this.databaseService.query(insertRequestQuery, [
-                requestType, isRequestDefective, 'Создана', employeeId, employeeId, comment
+                requestType, isRequestDefective, employeeId, employeeId, comment
             ]) as any;
 
             const requestId = requestResult.rows[0].id;
@@ -132,20 +134,17 @@ export class RequestsService {
                 await this.databaseService.query(updateCartridgesQuery, [comment, employeeId, existingGuids, requestData]);
             }
 
-            // 3. Если есть НОВЫЕ картриджи (из ручного ввода) — создаем их и привязываем к этой же заявке
-            for (const newCartridge of newCartridgesList) {
-                const amount = Number(newCartridge.amount);
-                if (amount <= 0) continue;
+            // 3. Если есть НОВЫЕ картриджи — создаем их и привязываем к этой же заявке
+            const amount = Number(newCartridges.amount);
 
-                // Генерируем пачку GUID для конкретной модели
-                const guidPromises = Array.from({ length: amount }, () => this.databaseService.generateGUID());
-                const generatedObjects = await Promise.all(guidPromises);
-                const generatedGuids = generatedObjects.map(item => item.guid);
+            // Генерируем пачку GUID для конкретной модели
+            const guidPromises = Array.from({ length: amount }, () => this.databaseService.generateGUID());
+            const generatedObjects = await Promise.all(guidPromises);
+            const generatedGuids = generatedObjects.map(item => item.guid);
 
-                allGeneratedGuids = [...allGeneratedGuids, ...generatedGuids];
+            allGeneratedGuids = [...allGeneratedGuids, ...generatedGuids];
 
-                // Добавляем поле lastchangedata в список колонок INSERT и передаем $8 параметром
-                const insertNewCartridgesQuery = `
+            const insertNewCartridgesQuery = `
                     WITH inserted_cartridges AS (
                         INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment, lastchangedata)
                         SELECT $1, u.guid, $2, $3, $4, $5, $8
@@ -157,17 +156,16 @@ export class RequestsService {
                     FROM inserted_cartridges ic;
                 `;
 
-                await this.databaseService.query(insertNewCartridgesQuery, [
-                    newCartridge.model,
-                    cartridgeTargetStatus,
-                    isRequestDefective,
-                    employeeId,
-                    comment,
-                    generatedGuids,
-                    requestId,
-                    requestData
-                ]);
-            }
+            await this.databaseService.query(insertNewCartridgesQuery, [
+                newCartridges.model,
+                cartridgeTargetStatus,
+                isRequestDefective,
+                employeeId,
+                comment,
+                generatedGuids,
+                requestId,
+                requestData
+            ]);
 
             return {
                 success: true,

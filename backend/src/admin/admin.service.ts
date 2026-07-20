@@ -65,7 +65,7 @@ export class AdminService {
           SELECT 
             r.id, 
             TO_CHAR(r.data, 'DD.MM.YYYY HH24:MI') as data,
-            e.fullname as employee_name, r.type, r.status,
+            e.fullname as employee_name, r.type,
             COUNT(rl.cartridgeid)::int as cartridges_count,
             r.isdefective, COALESCE(r.comment, '') as comment,
             le.fullname as lastchangeby,
@@ -79,8 +79,7 @@ export class AdminService {
             r.id, 
             r.data, 
             e.fullname, 
-            r.type, 
-            r.status, 
+            r.type,  
             r.isdefective, 
             r.comment, 
             le.fullname, 
@@ -137,10 +136,10 @@ export class AdminService {
             c.model, 
             c.guid,
             c.status,
-            TO_CHAR(c.lastchangedata, 'DD.MM.YY HH:MI:SS') AS lastchangedata,
+            TO_CHAR(c.lastchangedata, 'DD.MM.YY HH24:MI:SS') AS lastchangedata,
             c.comment,
             r.type,
-            TO_CHAR(r.data, 'DD.MM.YY HH:MI:SS') AS requestdata
+            TO_CHAR(r.data, 'DD.MM.YY HH24:MI:SS') AS requestdata
         FROM public.requestslist rl
         JOIN public.cartridges c ON rl.cartridgeid = c.id
         JOIN public.requests r ON rl.requestid = r.id
@@ -148,67 +147,6 @@ export class AdminService {
         `;  
         const result = await this.databaseService.query(query, [requestId]);
         return result.rows;
-    }
-
-    async createCartridge(model: string, guid: string, status: string = 'Ожидает заправки', isdefective = false, adminId: number | null, comment: string ) {
-        if (!model?.trim() || !guid?.trim()) {
-            throw new BadRequestException('Модель и GUID обязательны');
-        }
-
-        // 1. Начинаем транзакцию, чтобы все три операции выполнились атомарно
-        await this.databaseService.query('BEGIN');
-
-        try {
-            // 2. Создаем сам картридж в таблице public.cartridges
-            const cartridgeResult = await this.databaseService.query(`
-                  INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment)
-                  VALUES ($1, $2, $3, $4, $5, $6)
-                  RETURNING *
-                `, [
-                model.trim(),
-                guid.trim(),
-                status,
-                isdefective,
-                adminId,
-                comment
-            ]);
-
-            const newCartridge = cartridgeResult.rows[0];
-
-            // 3. Создаем заявку с типом "Регистрация" в public.requests
-            const requestResult = await this.databaseService.query(`
-                  INSERT INTO public.requests (type, isdefective, status, employee, lastchangeby, comment)
-                  VALUES ($1, $2, $3, $4, $5, $6)
-                  RETURNING id;
-                `, [
-                'Регистрация',
-                isdefective,
-                'Создана',
-                adminId,
-                adminId,
-                comment ?? 'Администратор добавил картридж' // Комментарий к заявке
-            ]);
-
-            const requestId = requestResult.rows[0].id;
-
-            // 4. Связываем созданный картридж и заявку в public.requestslist
-            await this.databaseService.query(`
-              INSERT INTO public.requestslist (requestid, cartridgeid)
-              VALUES ($1, $2)
-            `, [requestId, newCartridge.id]);
-
-            // 5. Фиксируем транзакцию, если ошибок не возникло
-            await this.databaseService.query('COMMIT');
-
-            // Возвращаем созданный картридж
-            return newCartridge;
-
-        } catch (error) {
-            // Если что-то пошло не так, откатываем изменения в БД
-            await this.databaseService.query('ROLLBACK');
-            console.error("Ошибка при создании картриджа и заявки регистрации:", error);
-            throw error;
-        }
     }
 
     async scrapCartridgeByGuid(guid: string, adminId: number) {
@@ -237,13 +175,12 @@ export class AdminService {
         try {
             // 3. Создаем заявку с типом "Списание"
             const requestResult = await this.databaseService.query(`
-              INSERT INTO public.requests (type, isdefective, status, employee, lastchangeby)
-              VALUES ($1, $2, $3, $4, $5)
+              INSERT INTO public.requests (type, isdefective, employee, lastchangeby)
+              VALUES ($1, $2, $3, $4)
               RETURNING id, data;
             `, [
                 'Списание',
                 true,
-                'Создана',
                 adminId,
                 adminId
             ]);
@@ -297,13 +234,12 @@ export class AdminService {
 
         try {
             const requestResult = await this.databaseService.query(`
-              INSERT INTO public.requests (type, isdefective, status, employee, lastchangeby, comment)
-              VALUES ($1, $2, $3, $4, $5, $6)
+              INSERT INTO public.requests (type, isdefective, employee, lastchangeby, comment)
+              VALUES ($1, $2, $3, $4, $5)
               RETURNING id, data;
             `, [
                 'Изменение статуса',
                 false,
-                'Создана',
                 adminId,
                 adminId,
                 comment ?? null
@@ -431,14 +367,9 @@ export class AdminService {
         }
     }
 
-    async getNewGUID(): Promise<string> {
-        const result = await this.databaseService.generateGUID();
-        return result.guid;
-    }
-
     async getSettings(id = 1) {
         try {
-            const queryText = 'SELECT refillthreshold, rowscollapsedlimit FROM public.dashboard_settings WHERE id = $1';
+            const queryText = 'SELECT * FROM public.dashboard_settings WHERE id = $1';
             const { rows } = await this.databaseService.query(queryText, [id]);
 
             if (rows.length === 0) {
@@ -447,26 +378,30 @@ export class AdminService {
 
             return rows[0];
         } catch (error) {
-            throw new Error(`Ошибка при получении настроек дашборда: ${error.message}`);
+            throw new Error(`Ошибка при получении настроек дашборда: ${error}`);
         }
     }
 
 
     async updateSettings(settings: any) {
-        const result = await this.databaseService.query(`
-      UPDATE public.dashboard_settings 
-      SET 
-          refillthreshold = $1,
-          rowsCollapsedLimit = $2
-      WHERE id = 1
-      RETURNING *`,
-            [settings.refillthreshold, settings.rowsCollapsedLimit]
-        );
-        const updated = result.rows[0];
-        const success =
-            updated.refillthreshold == settings.refillthreshold &&
-            updated.rowsCollapsedLimit == settings.rowsCollapsedLimit;
-
-        return { success };
+        try {
+            const result = await this.databaseService.query(`
+              UPDATE public.dashboard_settings 
+              SET 
+                  refillthreshold = $1,
+                  rowsCollapsedLimit = $2
+              WHERE id = 1
+              RETURNING *`,
+                [settings.refillthreshold, settings.rowscollapsedlimit]
+            );
+            const updated = result.rows[0];
+            const success =
+                updated.refillthreshold == settings.refillthreshold &&
+                updated.rowscollapsedlimit == settings.rowscollapsedlimit;
+            if (!success) throw new Error(`Ошибка сохранения настроек: Данные в базе не совпали с отправленными ${updated.refillthreshold} != ${settings.refillthreshold} и/или ${updated.rowscollapsedlimit} != ${settings.rowscollapsedlimit}`);
+            return { success };
+        } catch (error) {
+            throw new Error(`Настройки: ${error}`);
+        }
     }
 }

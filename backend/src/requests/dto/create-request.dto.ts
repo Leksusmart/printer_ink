@@ -1,5 +1,13 @@
-import { IsString, IsBoolean, IsNumber, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsBoolean, IsNumber, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
+export class NewCartridgeDto {
+    @IsString()
+    model: string;
+
+    @IsNumber()
+    amount: number;
+}
 export class CreateRequestDto {
     @IsString()
     type: string;
@@ -12,17 +20,8 @@ export class CreateRequestDto {
     @IsOptional()
     status?: string;
 
-    @IsString()
-    data: string;
-
     @IsNumber()
     employeeID: number;
-
-    @IsString()
-    lastChangeData: string;
-
-    @IsNumber()
-    lastChangeBy: number;
 
     @IsString()
     @IsOptional()
@@ -43,4 +42,9 @@ export class CreateRequestDto {
     @IsArray()
     @IsOptional()
     guids?: string[];
+
+    @IsOptional() // добавьте, если поле newCartridges не всегда обязательно
+    @ValidateNested() // заставляет валидировать вложенный класс
+    @Type(() => NewCartridgeDto) // указывает class-transformer, в какой класс преобразовать объект
+    newCartridges?: NewCartridgeDto;
 }

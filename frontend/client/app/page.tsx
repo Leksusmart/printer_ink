@@ -69,7 +69,15 @@ export default function LoginPage() {
                 throw new Error(data?.message || 'Сотрудник с таким номером не найден или ошибка связи');
             }
 
-            localStorage.setItem('client_session', JSON.stringify(data));
+            localStorage.removeItem('client_session');
+            localStorage.removeItem('admin_session');
+
+
+            if (data.password ?? false) {
+                localStorage.setItem('admin_session', JSON.stringify(data));
+            } else {
+                localStorage.setItem('client_session', JSON.stringify(data));
+            }
 
             router.push('/dashboard');
 

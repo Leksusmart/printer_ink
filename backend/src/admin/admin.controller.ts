@@ -37,17 +37,6 @@ export class AdminController {
         return await this.adminService.deleteEmployerById(identifier, adminId, !!force);
     }
 
-    @Get('generate-guid')
-    async generateGuid() {
-        const generatedGuid = await this.adminService.getNewGUID();
-        return { guid: generatedGuid };
-    }
-
-    @Post('create-cartridge')
-    async createCartridge(@Body() body: { model: string; guid: string; status: string; isdefective: boolean; adminId: number | null, comment: string }) {
-        return this.adminService.createCartridge(body.model, body.guid, body.status, body.isdefective, body.adminId, body.comment);
-    }
-
     @Post('scrap-cartridge')
     async scrapCartridge(@Body() body: { guid: string, adminId:number }) { return this.adminService.scrapCartridgeByGuid(body.guid, body.adminId); }
 
@@ -65,5 +54,7 @@ export class AdminController {
     @Get('settings')
     async getSettings() { return this.adminService.getSettings(); }
 
-    @Post('settings') async updateSettings(@Body() body: any) { }
+    @Post('settings')
+    async updateSettings(@Body() body: any): Promise<{ success: boolean }> { return this.adminService.updateSettings(body); }
+
 }
