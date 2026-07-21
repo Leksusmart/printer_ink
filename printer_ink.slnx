@@ -65,6 +65,12 @@
     <File Path="frontend/admin/app/dashboard/components/RequestsTable.tsx" />
     <File Path="frontend/admin/app/dashboard/components/SettingsModal.tsx" />
   </Folder>
+  <Folder Name="/frontend/admin/app/dashboard/pages/">
+    <File Path="frontend/admin/app/dashboard/pages/cartridgesQR/page.tsx" />
+  </Folder>
+  <Folder Name="/frontend/admin/app/dashboard/pages/cartridgesQR/">
+    <File Path="frontend/admin/app/dashboard/pages/cartridgesQR/page.tsx" />
+  </Folder>
   <Folder Name="/frontend/client/" />
   <Folder Name="/frontend/client/app/">
     <File Path="frontend/client/app/page.tsx" />
@@ -74,9 +80,5 @@
   </Folder>
   <Folder Name="/frontend/client/app/dashboard/components/">
     <File Path="frontend/client/app/dashboard/components/QRScanner.tsx" />
-  </Folder>
-  <Folder Name="/frontend/client/app/dashboard/pages/" />
-  <Folder Name="/frontend/client/app/dashboard/pages/cartridgesQR/">
-    <File Path="frontend/client/app/dashboard/pages/cartridgesQR/page.tsx" />
   </Folder>
 </Solution>
