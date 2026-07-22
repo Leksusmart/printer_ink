@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import QRScanner from './components/QRScanner';
 interface CartridgeItem {

@@ -34,7 +34,6 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Инициализируем маршрутизатор
     const router = useRouter();
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +55,6 @@ export default function LoginPage() {
         const cleanPhone = '+7' + phone.replace(/[^\d]/g, '').slice(1);
 
         try {
-            // Отправляем POST запрос на эндпоинт авторизации клиента
             const response = await fetch(`${process.env.CLIENT_URL}:${process.env.PORT_BACKEND}/employers/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -72,7 +70,6 @@ export default function LoginPage() {
             localStorage.removeItem('client_session');
             localStorage.removeItem('admin_session');
 
-
             if (data.password ?? false) {
                 localStorage.setItem('admin_session', JSON.stringify(data));
             } else {
@@ -85,25 +82,33 @@ export default function LoginPage() {
             const error = err as Error;
             setError(error.message || 'Произошла неизвестная ошибка');
         } finally {
-            setIsLoading(false); // Выключаем режим загрузки в любом случае
+            setIsLoading(false);
         }
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 font-sans">
-            <form onSubmit={handleLogin} className="w-full max-w-md rounded-xl border border-gray-100 bg-white p-8 shadow-md">
-                <h2 className="mb-6 text-center text-2xl font-bold text-gray-800">
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#e8e8ed] p-6 font-sans">
+            {/* Декоративные мелкие кляксы (как будто капли упали рядом) */}
+            <div className="ink-splat absolute top-[18%] left-[15%] h-32 w-32 rotate-[-12deg] rounded-[40%_60%_55%_45%_/_35%_50%_70%_30%] bg-black/90 shadow-xl" />
+            <div className="ink-splat absolute top-[25%] right-[18%] h-20 w-20 rotate-[25deg] rounded-[70%_30%_45%_55%_/_60%_40%_35%_65%] bg-black/90 shadow-lg" />
+            <div className="ink-splat absolute bottom-[22%] left-[22%] h-16 w-16 rotate-[-35deg] rounded-[35%_65%_80%_20%_/_50%_30%_60%_40%] bg-black/80 shadow-md" />
+
+            <form
+                onSubmit={handleLogin}
+                className="ink-klyaksa relative z-10 w-full max-w-md px-11 py-16 text-white shadow-2xl"
+            >
+                <h2 className="mb-10 text-center text-3xl font-semibold tracking-tight text-white">
                     Вход в систему
                 </h2>
 
                 {error && (
-                    <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+                    <div className="mb-6 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-center text-sm text-red-200">
                         {error}
                     </div>
                 )}
 
-                <div className="mb-5">
-                    <label htmlFor="phone" className="mb-2 block text-sm font-medium text-gray-700">
+                <div className="mb-8">
+                    <label htmlFor="phone" className="mb-3 block text-sm font-medium text-white/85">
                         Номер телефона
                     </label>
                     <input
@@ -115,19 +120,38 @@ export default function LoginPage() {
                         maxLength={18}
                         required
                         disabled={isLoading}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
+                        className="w-full rounded-2xl border border-white/20 bg-white/10 px-5 py-3.5 text-lg text-white placeholder-white/50 transition-all outline-none focus:border-white/40 focus:ring-2 focus:ring-white/30 disabled:opacity-50"
                     />
                 </div>
 
-                {/* Изменяем текст кнопки в зависимости от того, идет ли загрузка */}
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors duration-200 hover:bg-blue-700 disabled:bg-blue-400"
+                    className="bg-gradient-to-r w-full rounded-2xl from-zinc-950 to-black px-6 py-4 font-semibold text-white shadow-xl transition-all duration-300 hover:brightness-110 disabled:opacity-70"
                 >
                     {isLoading ? 'Проверка...' : 'Войти'}
                 </button>
             </form>
+
+            <style jsx>{`
+                .ink-klyaksa {
+                    background: linear-gradient(145deg, #0c0c0c 0%, #1a1a1a 100%);
+                    border: 1px solid rgba(255,255,255,0.07);
+                    border-radius: 58% 42% 65% 35% / 45% 55% 40% 60%;
+                    box-shadow: 
+                        0 25px 60px -15px rgba(0, 0, 0, 0.45),
+                        inset 0 10px 30px rgba(255,255,255,0.05);
+                }
+
+                .ink-splat {
+                    filter: blur(1px);
+                    opacity: 0.95;
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .ink-klyaksa, .ink-splat { animation: none; }
+                }
+            `}</style>
         </div>
     );
 }
