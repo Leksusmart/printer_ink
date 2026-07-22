@@ -135,16 +135,17 @@ export class RequestsService {
             }
 
             // 3. Если есть НОВЫЕ картриджи — создаем их и привязываем к этой же заявке
-            const amount = Number(newCartridges.amount);
+            if (newCartridges && newCartridges.amount) {
+                const amount = Number(newCartridges.amount);
 
-            // Генерируем пачку GUID для конкретной модели
-            const guidPromises = Array.from({ length: amount }, () => this.databaseService.generateGUID());
-            const generatedObjects = await Promise.all(guidPromises);
-            const generatedGuids = generatedObjects.map(item => item.guid);
+                // Генерируем пачку GUID для конкретной модели
+                const guidPromises = Array.from({ length: amount }, () => this.databaseService.generateGUID());
+                const generatedObjects = await Promise.all(guidPromises);
+                const generatedGuids = generatedObjects.map(item => item.guid);
 
-            allGeneratedGuids = [...allGeneratedGuids, ...generatedGuids];
+                allGeneratedGuids = [...allGeneratedGuids, ...generatedGuids];
 
-            const insertNewCartridgesQuery = `
+                const insertNewCartridgesQuery = `
                     WITH inserted_cartridges AS (
                         INSERT INTO public.cartridges (model, guid, status, isdefective, lastchangeby, comment, lastchangedata)
                         SELECT $1, u.guid, $2, $3, $4, $5, $8
@@ -156,16 +157,17 @@ export class RequestsService {
                     FROM inserted_cartridges ic;
                 `;
 
-            await this.databaseService.query(insertNewCartridgesQuery, [
-                newCartridges.model,
-                cartridgeTargetStatus,
-                isRequestDefective,
-                employeeId,
-                comment,
-                generatedGuids,
-                requestId,
-                requestData
-            ]);
+                await this.databaseService.query(insertNewCartridgesQuery, [
+                    newCartridges.model,
+                    cartridgeTargetStatus,
+                    isRequestDefective,
+                    employeeId,
+                    comment,
+                    generatedGuids,
+                    requestId,
+                    requestData
+                ]);
+            }
 
             return {
                 success: true,
