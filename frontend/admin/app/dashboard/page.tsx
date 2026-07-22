@@ -77,7 +77,13 @@ export default function DashboardPage() {
         try {
             const user = JSON.parse(session);
 
-            if (user.role !== 'Admin' || !checkSession(user.phone)) {
+            checkSession(user.phone).then((isSessionValid) => {
+                if (!isSessionValid) {
+                    router.push('/');
+                }
+            });
+
+            if (user.role !== 'Admin') {
                 router.push('/');
             } else {
                 setAdmin(user);
