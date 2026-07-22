@@ -23,7 +23,7 @@ export default function DashboardStats({ stats }: DashboardStatsProps) {
         };
 
         loadThreshold();
-    }, []);
+    }, [stats]);
 
     if (!stats) {
         return <div className="text-center py-8 text-gray-500">Загрузка статистики...</div>;
