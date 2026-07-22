@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import QRScanner from './components/QRScanner';
 interface CartridgeItem {
     guid: string;
