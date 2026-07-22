@@ -1,6 +1,5 @@
 ﻿'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import QRScanner from './components/QRScanner';
@@ -54,6 +53,8 @@ function DashboardContent() {
 
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [activeScanRowIndex, setActiveScanRowIndex] = useState<number | null>(null);
+
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     let userPhone = 'ERROR';
 
@@ -313,6 +314,8 @@ function DashboardContent() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        setIsSubmitting(true);
 
         if (!currentUser) {
             alert('Ошибка: Данные сотрудника еще не загрузились!');
@@ -641,13 +644,14 @@ function DashboardContent() {
 
                     <button
                         type="submit"
-                        disabled={!isFormValid}
+                        disabled={!isFormValid || isSubmitting}
+
                         className={`w-full py-3 font-bold text-xs tracking-wider rounded uppercase transition-colors duration-200 ${isFormValid
                             ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
                             : 'bg-gray-200 text-gray-600 cursor-not-allowed'
                             }`}
                     >
-                        отправить заявку
+                        {isSubmitting ? 'Отправка...' : 'Отправить заявку'}
                     </button>
                 </form>
             </div>
